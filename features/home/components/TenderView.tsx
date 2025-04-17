@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { Box, Button, IconButton, Select, MenuItem, InputLabel, FormControl, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Modal, Typography } from '@mui/material';
 import { homeRootSx } from './HomeStyles';
 import VisibilityIcon from '@mui/icons-material/Visibility';
@@ -66,131 +67,173 @@ const initialTenders = [
 
 interface TenderViewProps {
   selectedStages: string[];
-}
-
+  onChangeSelectedStages: (selected: string[]) => void;
+  onChangeSelectedStages: (selected: string[]) => void;
+  onChangeSelectedStages: (selected: string[]) => void;
+export const TenderView: React.FC<TenderViewProps> = ({ selectedStages, onChangeSelectedStages }) => {
+export const TenderView: React.FC<TenderViewProps> = ({ selectedStages, onChangeSelectedStages }) => {
 export const TenderView: React.FC<TenderViewProps> = ({ selectedStages }) => {
   const [allTenders, setAllTenders] = useState(initialTenders);
   const fileInputs = React.useRef<{ [key: string]: HTMLInputElement | null }>({});
   // Для каждого этапа — отдельный блок
   const renderStageBlocks = () => {
-    if (selectedStages.length === 0) return null;
-    return selectedStages.map(stageKey => {
-      const tendersForStage = allTenders.filter(t => t.stage === stageKey);
-      return (
-        <Paper key={stageKey} sx={{ mb: 3, p: 2, background: '#f7fafd', borderRadius: 3, boxShadow: 2 }}>
-          <Typography variant="h6" fontWeight={700} sx={{ mb: 2, color: 'primary.main' }}>{stageKey}</Typography>
-          {tendersForStage.length === 0 ? (
-            <Typography color="text.secondary" sx={{ mb: 1 }}>Нет тендеров</Typography>
-          ) : (
-            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: '1fr 1fr 1fr' }, gap: 3 }}>
-              {tendersForStage.map((tender) => (
-                <Box key={tender.id} sx={{
-                  background: 'linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)',
-                  p: 3,
-                  borderRadius: 4,
-                  boxShadow: 3,
-                  transition: 'transform 0.2s',
-                  '&:hover': { transform: 'scale(1.02)' },
-                }}>
-                  {/* Край для drag (визуальная рука) */}
-                  <Box
-                    sx={{
-                      position: 'absolute',
-                      top: 0,
-                      right: 0,
-                      width: 16,
-                      height: '100%',
-                      cursor: 'grab',
-                      zIndex: 2,
-                    }}
-                  />
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    {tender.icon}
-                    <Typography variant="subtitle1" fontWeight={600} color="text.primary">
-                      {tender.name}
-                    </Typography>
-                  </Box>
-                  <Box sx={{ color: 'text.secondary', fontSize: 14, mb: 1 }}>
-                    {!minimalMode && <Box>Номер: {tender.number}</Box>}
-                    <Box>НМЦК: {tender.nmck}</Box>
-                    <Box>Цена победителя: {tender.winnerPrice}</Box>
-                    <Box>Снижение: {tender.reduction}</Box>
-                    {!minimalMode && (
-                      <React.Fragment>
-                        <Box>Дата окончания: {tender.endDate}</Box>
-                        <Box>Закон: {tender.law}</Box>
-                        <Box>Осталось: {tender.remaining}</Box>
-                      </React.Fragment>
-                    )}
-                  </Box>
-                  <Box sx={{ mt: 2, display: 'flex', gap: 1 }}>
-                    {!minimalMode && (
-                      <Button size="small" color="primary" sx={{ textTransform: 'none' }} onClick={() => handleOpenModal('risk')}>Карточка рисков</Button>
-                    )}
-                    <Button size="small" color="primary" sx={{ textTransform: 'none' }} onClick={() => handleOpenModal('note')}>Заметка</Button>
-                  </Box>
-                  {!minimalMode && (
-                    <React.Fragment>
-                      <Box sx={{ mt: 2 }}>
-                        <InputLabel shrink sx={{ fontSize: 13 }}>Цвет метки:</InputLabel>
-                        <Select
-                          size="small"
-                          value={tender.color}
-                          displayEmpty
-                          sx={{ bgcolor: '#f8fafc', borderRadius: 2, mt: 0.5, width: '100%', maxWidth: 150 }}
-                        >
-                          <MenuItem value="">Без цвета</MenuItem>
-                          {COLORS.map((opt) => (
-                            <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
-                          ))}
-                        </Select>
-                      </Box>
-                      <Box sx={{ mt: 2 }}>
-                        <Typography fontSize={13} mb={1}>Документы:</Typography>
-                        {tender.documents.length ? (
-                          <Box style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                            <Button size="small" color="primary" sx={{ minWidth: 0, textTransform: 'none', maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                              {tender.documents[0].name}
-                            </Button>
-                            <Button size="small" color="primary" sx={{ textTransform: 'none' }} onClick={() => handleOpenModal('preview')}>Просмотр</Button>
-                            <IconButton size="small" color="error"><DeleteIcon /></IconButton>
-                          </Box>
-                        ) : (
-                          <Typography fontSize={13} color="text.secondary">Нет</Typography>
-                        )}
-                        <input
-                          type="file"
-                          ref={el => (fileInputs.current[tender.id] = el)}
-                          style={{ display: 'none' }}
-                          onChange={e => {
-                            const file = e.target.files?.[0];
-                            if (file) {
-                              setAllTenders(prev => prev.map(t =>
-                                t.id === tender.id
-                                  ? { ...t, documents: [...(t.documents || []), { name: file.name, file }] }
-                                  : t
-                              ));
-                            }
-                            e.target.value = '';
-                          }}
-                        />
-                        <Button size="small" color="primary" sx={{ textTransform: 'none', mt: 1 }} onClick={() => fileInputs.current[tender.id]?.click()}>
-                          Загрузить файл
-                        </Button>
-                      </Box>
-                      <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
-                        <IconButton color="warning"><ArrowForwardIcon /></IconButton>
-                        <IconButton color="error" onClick={() => handleOpenModal('delete')}> <DeleteIcon /> </IconButton>
-                      </Box>
-                    </React.Fragment>
+    // drag end handler
+    const handleDragEnd = (result: DropResult) => {
+      if (!result.destination) return;
+      const sourceStage = result.source.droppableId;
+      const destStage = result.destination.droppableId;
+      const sourceIdx = result.source.index;
+      const destIdx = result.destination.index;
+      const sourceTenders = allTenders.filter(t => t.stage === sourceStage);
+      const destTenders = allTenders.filter(t => t.stage === destStage);
+      const movedTender = sourceTenders[sourceIdx];
+      if (!movedTender) return;
+      let newTenders = allTenders.filter(t => t.id !== movedTender.id);
+      // обновляем stage
+      movedTender.stage = destStage;
+      // вставляем в нужное место
+      let before = newTenders.filter(t => t.stage !== destStage);
+      let after = newTenders.filter(t => t.stage === destStage);
+      after.splice(destIdx, 0, movedTender);
+      setAllTenders([...before, ...after]);
+    };
+
+    return (
+      <DragDropContext onDragEnd={handleDragEnd}>
+        {selectedStages.length === 0 ? null : selectedStages.map(stageKey => {
+          const tendersForStage = allTenders.filter(t => t.stage === stageKey);
+          return (
+            <Droppable droppableId={stageKey} key={stageKey} direction="vertical">
+              {(provided, snapshot) => (
+                <Paper ref={provided.innerRef} {...provided.droppableProps} sx={{ mb: 3, p: 2, background: snapshot.isDraggingOver ? '#e3f2fd' : '#f7fafd', borderRadius: 3, boxShadow: 2 }}>
+                  <Typography variant="h6" fontWeight={700} sx={{ mb: 2, color: 'primary.main' }}>{stageKey}</Typography>
+                  {tendersForStage.length === 0 ? (
+                    <Typography color="text.secondary" sx={{ mb: 1 }}>Нет тендеров</Typography>
+                  ) : (
+                    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: '1fr 1fr 1fr' }, gap: 3 }}>
+                      {tendersForStage.map((tender, idx) => (
+                        <Draggable draggableId={tender.id} index={idx} key={tender.id}>
+                          {(provided, snapshot) => (
+                            <Box
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              sx={{
+                                position: 'relative',
+                                background: 'linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)',
+                                p: 3,
+                                borderRadius: 4,
+                                boxShadow: 3,
+                                transition: 'transform 0.2s',
+                                '&:hover': { transform: 'scale(1.02)' },
+                                opacity: snapshot.isDragging ? 0.8 : 1,
+                              }}
+                            >
+                              {/* Верхняя часть карточки для drag */}
+                              <Box
+                                {...provided.dragHandleProps}
+                                sx={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  mb: 2,
+                                  cursor: 'grab',
+                                  userSelect: 'none',
+                                }}
+                              >
+                                {tender.icon}
+                                <Typography variant="subtitle1" fontWeight={600} color="text.primary">
+                                  {tender.name}
+                                </Typography>
+                              </Box>
+                              {/* --- остальное содержимое карточки --- */}
+                              <Box sx={{ color: 'text.secondary', fontSize: 14, mb: 1 }}>
+                                {!minimalMode && <Box>Номер: {tender.number}</Box>}
+                                <Box>НМЦК: {tender.nmck}</Box>
+                                <Box>Цена победителя: {tender.winnerPrice}</Box>
+                                <Box>Снижение: {tender.reduction}</Box>
+                                {!minimalMode && (
+                                  <React.Fragment>
+                                    <Box>Дата окончания: {tender.endDate}</Box>
+                                    <Box>Закон: {tender.law}</Box>
+                                    <Box>Осталось: {tender.remaining}</Box>
+                                  </React.Fragment>
+                                )}
+                              </Box>
+                              <Box sx={{ mt: 2, display: 'flex', gap: 1 }}>
+                                {!minimalMode && (
+                                  <Button size="small" color="primary" sx={{ textTransform: 'none' }} onClick={() => handleOpenModal('risk', tender.id)}>Карточка рисков</Button>
+                                )}
+                                <Button size="small" color="primary" sx={{ textTransform: 'none' }} onClick={() => handleOpenModal('note', tender.id)}>Заметка</Button>
+                              </Box>
+                              {!minimalMode && (
+                                <React.Fragment>
+                                  <Box sx={{ mt: 2 }}>
+                                    <InputLabel shrink sx={{ fontSize: 13 }}>Цвет метки:</InputLabel>
+                                    <Select
+                                      size="small"
+                                      value={tender.color}
+                                      displayEmpty
+                                      sx={{ bgcolor: '#f8fafc', borderRadius: 2, mt: 0.5, width: '100%', maxWidth: 150 }}
+                                      onChange={e => setAllTenders(prev => prev.map(t => t.id === tender.id ? { ...t, color: e.target.value } : t))}
+                                    >
+                                      <MenuItem value="">Без цвета</MenuItem>
+                                      {COLORS.map((opt) => (
+                                        <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
+                                      ))}
+                                    </Select>
+                                  </Box>
+                                  <Box sx={{ mt: 2 }}>
+                                    <Typography fontSize={13} mb={1}>Документы:</Typography>
+                                    {tender.documents.length ? (
+                                      <Box style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                        <Button size="small" color="primary" sx={{ minWidth: 0, textTransform: 'none', maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                          {tender.documents[0].name}
+                                        </Button>
+                                        <Button size="small" color="primary" sx={{ textTransform: 'none' }} onClick={() => handleOpenModal('preview', tender.id)}>Просмотр</Button>
+                                        <IconButton size="small" color="error"><DeleteIcon /></IconButton>
+                                      </Box>
+                                    ) : (
+                                      <Typography fontSize={13} color="text.secondary">Нет</Typography>
+                                    )}
+                                    <input
+                                      type="file"
+                                      ref={el => (fileInputs.current[tender.id] = el)}
+                                      style={{ display: 'none' }}
+                                      onChange={e => {
+                                        const file = e.target.files?.[0];
+                                        if (file) {
+                                          setAllTenders(prev => prev.map(t =>
+                                            t.id === tender.id
+                                              ? { ...t, documents: [...(t.documents || []), { name: file.name, file }] }
+                                              : t
+                                          ));
+                                        }
+                                        e.target.value = '';
+                                      }}
+                                    />
+                                    <Button size="small" color="primary" sx={{ textTransform: 'none', mt: 1 }} onClick={() => fileInputs.current[tender.id]?.click()}>
+                                      Загрузить файл
+                                    </Button>
+                                  </Box>
+                                  <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+                                    <IconButton color="warning"><ArrowForwardIcon /></IconButton>
+                                    <IconButton color="error" onClick={() => handleOpenModal('delete', tender.id)}> <DeleteIcon /> </IconButton>
+                                  </Box>
+                                </React.Fragment>
+                              )}
+                            </Box>
+                          )}
+                        </Draggable>
+                      ))}
+                      {provided.placeholder}
+                    </Box>
                   )}
-                </Box>
-              ))}
-            </Box>
-          )}
-        </Paper>
-      );
-    });
+                </Paper>
+              )}
+            </Droppable>
+          );
+        })}
+      </DragDropContext>
+    );
   };
 
   const [viewMode, setViewMode] = useState<'cards' | 'rows'>('cards');
@@ -243,108 +286,588 @@ export const TenderView: React.FC<TenderViewProps> = ({ selectedStages }) => {
 
       {/* Cards View */}
       {viewMode === 'cards' && (
-        <Box>
-          {renderStageBlocks()}
-        </Box>
+  <DragDropContext
+    onDragEnd={(result) => {
+      if (!result.destination) return;
+      const { source, destination, draggableId } = result;
+      if (source.droppableId === destination.droppableId && source.index === destination.index) return;
+      setAllTenders(prev => {
+        const moved = prev.find(t => t.id === draggableId);
+        if (!moved) return prev;
+        // меняем stage
+        const updated = prev.map(t =>
+          t.id === draggableId ? { ...t, stage: destination.droppableId } : t
+        );
+        return updated;
+      });
+    }}
+  >
+    <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+      {selectedStages.length === 0 ? null : selectedStages.map(stageKey => {
+        const tendersForStage = allTenders.filter(t => t.stage === stageKey);
+        return (
+          <Droppable droppableId={stageKey} key={stageKey} direction="vertical">
+            {(provided, snapshot) => (
+              <Paper
+                ref={provided.innerRef}
+                {...provided.droppableProps}
+  const tendersForStage = allTenders.filter(t => t.stage === stageKey);
+  return (
+    <Paper key={stageKey} sx={{ mb: 3, p: 2, background: '#f7fafd', borderRadius: 3, boxShadow: 2 }}>
+      <Box sx={{ mb: 2, fontWeight: 700, color: 'primary.main', fontSize: 20 }}>{stageKey}</Box>
+      {tendersForStage.length === 0 ? (
+        <Typography color="text.secondary" sx={{ mb: 1 }}>Нет тендеров</Typography>
+      ) : (
+        <DragDropContext
+          onDragEnd={result => {
+            if (!result.destination) return;
+            const sourceIdx = result.source.index;
+            const destIdx = result.destination.index;
+            if (sourceIdx === destIdx) return;
+            // Перемещаем таблицу внутри этапа (на практике этап один, но для универсальности)
+            // Если нужно перемещать строки, то тут другая логика
+          }}
+        >
+          <Droppable droppableId={`table-droppable-${stageKey}`} direction="vertical" type={`table-${stageKey}`}>
+            {(provided, snapshot) => (
+              <div ref={provided.innerRef} {...provided.droppableProps}>
+                <Draggable draggableId={`table-${stageKey}`} index={0} key={`table-${stageKey}`}>
+                  {(providedTable, snapshotTable) => (
+                    <TableContainer
+                      ref={providedTable.innerRef}
+                      {...providedTable.draggableProps}
+                      sx={{ borderRadius: 4, boxShadow: snapshotTable.isDragging ? 6 : 0, background: 'none', mb: 2, opacity: snapshotTable.isDragging ? 0.95 : 1, transition: 'box-shadow 0.2s, opacity 0.2s' }}
+                    >
+                      <Table>
+                        <TableHead {...providedTable.dragHandleProps}>
+                          <TableRow sx={{ background: 'linear-gradient(90deg, #1976d2 0%, #1565c0 100%)', cursor: 'grab' }}>
+                            <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Название</TableCell>
+                            {!minimalMode && <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Номер</TableCell>}
+                            <TableCell sx={{ color: '#fff', fontWeight: 600 }}>НМЦК</TableCell>
+                            <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Цена победителя</TableCell>
+                            <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Снижение</TableCell>
+                            {!minimalMode && <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Дата окончания</TableCell>}
+                            {!minimalMode && <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Закон</TableCell>}
+                            {!minimalMode && <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Осталось</TableCell>}
+                            {!minimalMode && <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Карточка рисков</TableCell>}
+                            <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Заметка</TableCell>
+                            {!minimalMode && <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Документы</TableCell>}
+                            {!minimalMode && <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Цвет</TableCell>}
+                            {!minimalMode && <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Действия</TableCell>}
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {tendersForStage.map((tender) => (
+                            <TableRow key={tender.id} hover>
+                              <TableCell sx={{ cursor: 'pointer', userSelect: 'none' }}>{tender.name}</TableCell>
+                              {!minimalMode && <TableCell>{tender.number}</TableCell>}
+                              <TableCell sx={{ color: 'primary.main', fontWeight: 500 }}>{tender.nmck}</TableCell>
+                              <TableCell sx={{ color: 'primary.main', fontWeight: 500 }}>{tender.winnerPrice}</TableCell>
+                              <TableCell>{tender.reduction}</TableCell>
+                              {!minimalMode && <TableCell>{tender.endDate}</TableCell>}
+                              {!minimalMode && <TableCell>{tender.law}</TableCell>}
+                              {!minimalMode && <TableCell sx={{ color: 'orange' }}>{tender.remaining}</TableCell>}
+                              {!minimalMode && (
+                                <TableCell>
+                                  <Button size="small" color="primary" sx={{ textTransform: 'none' }} onClick={() => handleOpenModal('risk', tender.id)}>Просмотр</Button>
+                                </TableCell>
+                              )}
+                              <TableCell>
+                                <Button size="small" color="primary" sx={{ textTransform: 'none' }} onClick={() => handleOpenModal('note', tender.id)}>Просмотр</Button>
+                              </TableCell>
+                              {!minimalMode && (
+                                <TableCell>
+                                  {tender.documents.length ? (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                      <Button size="small" color="primary" sx={{ minWidth: 0, textTransform: 'none', maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                        {tender.documents[0].name}
+                                      </Button>
+                                      <Button size="small" color="primary" sx={{ textTransform: 'none' }} onClick={() => handleOpenModal('preview', tender.id)}>Просмотр</Button>
+                                      <IconButton size="small" color="error"><DeleteIcon /></IconButton>
+                                    </div>
+                                  ) : (
+                                    <Typography fontSize={13} color="text.secondary">Нет документов</Typography>
+                                  )}
+                                  <Button size="small" color="primary" sx={{ textTransform: 'none', mt: 1 }}>Добавить</Button>
+                                </TableCell>
+                              )}
+                              {!minimalMode && (
+                                <TableCell>
+                                  <Select
+                                    size="small"
+                                    value={tender.color}
+                                    displayEmpty
+                                    sx={{ bgcolor: '#f8fafc', borderRadius: 2, width: '100%' }}
+                                    onChange={e => setAllTenders(prev => prev.map(t => t.id === tender.id ? { ...t, color: e.target.value } : t))}
+                                  >
+                                    <MenuItem value="">Без цвета</MenuItem>
+                                    {COLORS.map((opt) => (
+                                      <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
+                                    ))}
+                                  </Select>
+                                </TableCell>
+                              )}
+                              {!minimalMode && (
+                                <TableCell>
+                                  <IconButton color="warning"><ArrowForwardIcon /></IconButton>
+                                  <IconButton color="error" onClick={() => handleOpenModal('delete', tender.id)}> <DeleteIcon /> </IconButton>
+                                </TableCell>
+                              )}
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                  )}
+                </Draggable>
+                {provided.placeholder}
+              </div>
+            )}
+          </Droppable>
+        </DragDropContext>
       )}
+    </Paper>
+  );
+})}
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                  )}
+                </Draggable>
+                {provided.placeholder}
+              </div>
+            )}
+          </Droppable>
+        </DragDropContext>
+      )}
+    </Paper>
+  );
+})}
+                                    onChange={e => {
+                                      const file = e.target.files?.[0];
+                                      if (file) {
+                                        setAllTenders(prev => prev.map(t =>
+                                          t.id === tender.id
+                                            ? { ...t, documents: [...(t.documents || []), { name: file.name, file }] }
+                                            : t
+                                        ));
+                                      }
+                                      e.target.value = '';
+                                    }}
+                                  />
+                                  <Button size="small" color="primary" sx={{ textTransform: 'none', mt: 1 }} onClick={() => fileInputs.current[tender.id]?.click()}>
+                                    Загрузить файл
+                                  </Button>
+                                </Box>
+                                <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+                                  <IconButton color="warning"><ArrowForwardIcon /></IconButton>
+                                  <IconButton color="error" onClick={() => handleOpenModal('delete', tender.id)}> <DeleteIcon /> </IconButton>
+                                </Box>
+                              </React.Fragment>
+                            )}
+                          </Box>
+  const tendersForStage = allTenders.filter(t => t.stage === stageKey);
+  return (
+    <Paper key={stageKey} sx={{ mb: 3, p: 2, background: '#f7fafd', borderRadius: 3, boxShadow: 2 }}>
+      <Box sx={{ mb: 2, fontWeight: 700, color: 'primary.main', fontSize: 20 }}>{stageKey}</Box>
+      {tendersForStage.length === 0 ? (
+        <Typography color="text.secondary" sx={{ mb: 1 }}>Нет тендеров</Typography>
+      ) : (
+        <DragDropContext
+          onDragEnd={result => {
+            if (!result.destination) return;
+            const sourceIdx = result.source.index;
+            const destIdx = result.destination.index;
+            if (sourceIdx === destIdx) return;
+            // Перемещаем таблицу внутри этапа (на практике этап один, но для универсальности)
+            // Если нужно перемещать строки, то тут другая логика
+          }}
+        >
+          <Droppable droppableId={`table-droppable-${stageKey}`} direction="vertical" type={`table-${stageKey}`}>
+            {(provided, snapshot) => (
+              <div ref={provided.innerRef} {...provided.droppableProps}>
+                <Draggable draggableId={`table-${stageKey}`} index={0} key={`table-${stageKey}`}>
+                  {(providedTable, snapshotTable) => (
+                    <TableContainer
+                      ref={providedTable.innerRef}
+                      {...providedTable.draggableProps}
+                      sx={{ borderRadius: 4, boxShadow: snapshotTable.isDragging ? 6 : 0, background: 'none', mb: 2, opacity: snapshotTable.isDragging ? 0.95 : 1, transition: 'box-shadow 0.2s, opacity 0.2s' }}
+                    >
+                      <Table>
+                        <TableHead {...providedTable.dragHandleProps}>
+                          <TableRow sx={{ background: 'linear-gradient(90deg, #1976d2 0%, #1565c0 100%)', cursor: 'grab' }}>
+                            <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Название</TableCell>
+                            {!minimalMode && <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Номер</TableCell>}
+                            <TableCell sx={{ color: '#fff', fontWeight: 600 }}>НМЦК</TableCell>
+                            <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Цена победителя</TableCell>
+                            <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Снижение</TableCell>
+                            {!minimalMode && <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Дата окончания</TableCell>}
+                            {!minimalMode && <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Закон</TableCell>}
+                            {!minimalMode && <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Осталось</TableCell>}
+                            {!minimalMode && <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Карточка рисков</TableCell>}
+                            <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Заметка</TableCell>
+                            {!minimalMode && <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Документы</TableCell>}
+                            {!minimalMode && <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Цвет</TableCell>}
+                            {!minimalMode && <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Действия</TableCell>}
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {tendersForStage.map((tender) => (
+                            <TableRow key={tender.id} hover>
+                              <TableCell sx={{ cursor: 'pointer', userSelect: 'none' }}>{tender.name}</TableCell>
+                              {!minimalMode && <TableCell>{tender.number}</TableCell>}
+                              <TableCell sx={{ color: 'primary.main', fontWeight: 500 }}>{tender.nmck}</TableCell>
+                              <TableCell sx={{ color: 'primary.main', fontWeight: 500 }}>{tender.winnerPrice}</TableCell>
+                              <TableCell>{tender.reduction}</TableCell>
+                              {!minimalMode && <TableCell>{tender.endDate}</TableCell>}
+                              {!minimalMode && <TableCell>{tender.law}</TableCell>}
+                              {!minimalMode && <TableCell sx={{ color: 'orange' }}>{tender.remaining}</TableCell>}
+                              {!minimalMode && (
+                                <TableCell>
+                                  <Button size="small" color="primary" sx={{ textTransform: 'none' }} onClick={() => handleOpenModal('risk', tender.id)}>Просмотр</Button>
+                                </TableCell>
+                              )}
+                              <TableCell>
+                                <Button size="small" color="primary" sx={{ textTransform: 'none' }} onClick={() => handleOpenModal('note', tender.id)}>Просмотр</Button>
+                              </TableCell>
+                              {!minimalMode && (
+                                <TableCell>
+                                  {tender.documents.length ? (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                      <Button size="small" color="primary" sx={{ minWidth: 0, textTransform: 'none', maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                        {tender.documents[0].name}
+                                      </Button>
+                                      <Button size="small" color="primary" sx={{ textTransform: 'none' }} onClick={() => handleOpenModal('preview', tender.id)}>Просмотр</Button>
+                                      <IconButton size="small" color="error"><DeleteIcon /></IconButton>
+                                    </div>
+                                  ) : (
+                                    <Typography fontSize={13} color="text.secondary">Нет документов</Typography>
+                                  )}
+                                  <Button size="small" color="primary" sx={{ textTransform: 'none', mt: 1 }}>Добавить</Button>
+                                </TableCell>
+                              )}
+                              {!minimalMode && (
+                                <TableCell>
+                                  <Select
+                                    size="small"
+                                    value={tender.color}
+                                    displayEmpty
+                                    sx={{ bgcolor: '#f8fafc', borderRadius: 2, width: '100%' }}
+                                    onChange={e => setAllTenders(prev => prev.map(t => t.id === tender.id ? { ...t, color: e.target.value } : t))}
+                                  >
+                                    <MenuItem value="">Без цвета</MenuItem>
+                                    {COLORS.map((opt) => (
+                                      <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
+                                    ))}
+                                  </Select>
+                                </TableCell>
+                              )}
+                              {!minimalMode && (
+                                <TableCell>
+                                  <IconButton color="warning"><ArrowForwardIcon /></IconButton>
+                                  <IconButton color="error" onClick={() => handleOpenModal('delete', tender.id)}> <DeleteIcon /> </IconButton>
+                                </TableCell>
+                              )}
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                  )}
+                </Draggable>
+                {provided.placeholder}
+              </div>
+            )}
+          </Droppable>
+        </DragDropContext>
+      )}
+    </Paper>
+  );
+})}
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                  )}
+                </Draggable>
+                {provided.placeholder}
+              </div>
+            )}
+          </Droppable>
+        </DragDropContext>
+      )}
+    </Paper>
+  );
+})}
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                  )}
+                </Draggable>
+                {provided.placeholder}
+              </div>
+            )}
+          </Droppable>
+        </DragDropContext>
+      )}
+    </Paper>
+  );
+})}
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                  )}
+                </Draggable>
+                {provided.placeholder}
+              </div>
+            )}
+          </Droppable>
+        </DragDropContext>
+      )}
+    </Paper>
+  );
+})}
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                  )}
+                </Draggable>
+                {provided.placeholder}
+              </div>
+            )}
+          </Droppable>
+        </DragDropContext>
+      )}
+    </Paper>
+  );
+})}
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                  )}
+                </Draggable>
+                {provided.placeholder}
+              </div>
+            )}
+          </Droppable>
+        </DragDropContext>
+      )}
+    </Paper>
+  );
+})}
+                            </Box>
+                            {!minimalMode && (
+                              <React.Fragment>
+                                <Box sx={{ mt: 2 }}>
+                                  <InputLabel shrink sx={{ fontSize: 13 }}>Цвет метки:</InputLabel>
+                                  <Select
+                                    size="small"
+                                    value={tender.color}
+                                    displayEmpty
+                                    sx={{ bgcolor: '#f8fafc', borderRadius: 2, mt: 0.5, width: '100%', maxWidth: 150 }}
+                                    onChange={e => setAllTenders(prev => prev.map(t => t.id === tender.id ? { ...t, color: e.target.value } : t))}
+                                  >
+                                    <MenuItem value="">Без цвета</MenuItem>
+                                    {COLORS.map((opt) => (
+                                      <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
+                                    ))}
+                                  </Select>
+                                </Box>
+                                <Box sx={{ mt: 2 }}>
+                                  <Typography fontSize={13} mb={1}>Документы:</Typography>
+                                  {tender.documents.length ? (
+                                    <Box style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                      <Button size="small" color="primary" sx={{ minWidth: 0, textTransform: 'none', maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                        {tender.documents[0].name}
+                                      </Button>
+                                      <Button size="small" color="primary" sx={{ textTransform: 'none' }} onClick={() => handleOpenModal('preview', tender.id)}>Просмотр</Button>
+                                      <IconButton size="small" color="error"><DeleteIcon /></IconButton>
+                                    </Box>
+                                  ) : (
+                                    <Typography fontSize={13} color="text.secondary">Нет</Typography>
+                                  )}
+                                  <input
+                                    type="file"
+                                    ref={el => (fileInputs.current[tender.id] = el)}
+                                    style={{ display: 'none' }}
+                                    onChange={e => {
+                                      const file = e.target.files?.[0];
+                                      if (file) {
+                                        setAllTenders(prev => prev.map(t =>
+                                          t.id === tender.id
+                                            ? { ...t, documents: [...(t.documents || []), { name: file.name, file }] }
+                                            : t
+                                        ));
+                                      }
+                                      e.target.value = '';
+                                    }}
+                                  />
+                                  <Button size="small" color="primary" sx={{ textTransform: 'none', mt: 1 }} onClick={() => fileInputs.current[tender.id]?.click()}>
+                                    Загрузить файл
+                                  </Button>
+                                </Box>
+                                <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+                                  <IconButton color="warning"><ArrowForwardIcon /></IconButton>
+                                  <IconButton color="error" onClick={() => handleOpenModal('delete', tender.id)}> <DeleteIcon /> </IconButton>
+                                </Box>
+                              </React.Fragment>
+                            )}
+                          </Box>
+                        )}
+                      </Draggable>
+                    ))}
+                    {provided.placeholder}
+                  </Box>
+                )}
+              </Paper>
+            )}
+          </Droppable>
+        );
+      })}
+    </Box>
+  </DragDropContext>
+)}
 
       {/* Table View */}
       {viewMode === 'rows' && (
-        <Box>
-          {selectedStages.length === 0 ? null : selectedStages.map(stageKey => {
-            const tendersForStage = allTenders.filter(t => t.stage === stageKey);
-            return (
-              <Paper key={stageKey} sx={{ mb: 3, p: 2, background: '#f7fafd', borderRadius: 3, boxShadow: 2 }}>
-                <Typography variant="h6" fontWeight={700} sx={{ mb: 2, color: 'primary.main' }}>{stageKey}</Typography>
-                {tendersForStage.length === 0 ? (
-                  <Typography color="text.secondary" sx={{ mb: 1 }}>Нет тендеров</Typography>
-                ) : (
-                  <TableContainer component={Box} sx={{ borderRadius: 4, boxShadow: 0, background: 'none' }}>
-                    <Table>
-                      <TableHead>
-                        <TableRow sx={{ background: 'linear-gradient(90deg, #1976d2 0%, #1565c0 100%)' }}>
-                          <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Название</TableCell>
-                          {!minimalMode && <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Номер</TableCell>}
-                          <TableCell sx={{ color: '#fff', fontWeight: 600 }}>НМЦК</TableCell>
-                          <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Цена победителя</TableCell>
-                          <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Снижение</TableCell>
-                          {!minimalMode && <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Дата окончания</TableCell>}
-                          {!minimalMode && <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Закон</TableCell>}
-                          {!minimalMode && <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Осталось</TableCell>}
-                          {!minimalMode && <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Карточка рисков</TableCell>}
-                          <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Заметка</TableCell>
-                          {!minimalMode && <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Документы</TableCell>}
-                          {!minimalMode && <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Цвет</TableCell>}
-                          {!minimalMode && <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Действия</TableCell>}
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {tendersForStage.map((tender) => (
-                          <TableRow key={tender.id} hover>
-                            <TableCell>{tender.name}</TableCell>
-                            {!minimalMode && <TableCell>{tender.number}</TableCell>}
-                            <TableCell sx={{ color: 'primary.main', fontWeight: 500 }}>{tender.nmck}</TableCell>
-                            <TableCell sx={{ color: 'primary.main', fontWeight: 500 }}>{tender.winnerPrice}</TableCell>
-                            <TableCell>{tender.reduction}</TableCell>
-                            {!minimalMode && <TableCell>{tender.endDate}</TableCell>}
-                            {!minimalMode && <TableCell>{tender.law}</TableCell>}
-                            {!minimalMode && <TableCell sx={{ color: 'orange' }}>{tender.remaining}</TableCell>}
-                            {!minimalMode && (
-                              <TableCell>
-                                <Button size="small" color="primary" sx={{ textTransform: 'none' }} onClick={() => handleOpenModal('risk')}>Просмотр</Button>
-                              </TableCell>
-                            )}
-                            <TableCell>
-                              <Button size="small" color="primary" sx={{ textTransform: 'none' }} onClick={() => handleOpenModal('note')}>Просмотр</Button>
-                            </TableCell>
-                            {!minimalMode && (
-                              <TableCell>
-                                {tender.documents.length ? (
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                                    <Button size="small" color="primary" sx={{ minWidth: 0, textTransform: 'none', maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                      {tender.documents[0].name}
-                                    </Button>
-                                    <Button size="small" color="primary" sx={{ textTransform: 'none' }} onClick={() => handleOpenModal('preview')}>Просмотр</Button>
-                                    <IconButton size="small" color="error"><DeleteIcon /></IconButton>
-                                  </div>
-                                ) : (
-                                  <Typography fontSize={13} color="text.secondary">Нет документов</Typography>
-                                )}
-                                <Button size="small" color="primary" sx={{ textTransform: 'none', mt: 1 }}>Добавить</Button>
-                              </TableCell>
-                            )}
-                            {!minimalMode && (
-                              <TableCell>
-                                <Select
-                                  size="small"
-                                  value={tender.color}
-                                  displayEmpty
-                                  sx={{ bgcolor: '#f8fafc', borderRadius: 2, width: '100%' }}
-                                >
-                                  <MenuItem value="">Без цвета</MenuItem>
-                                  {COLORS.map((opt) => (
-                                    <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
+        <DragDropContext
+          onDragEnd={result => {
+            if (!result.destination) return;
+            const sourceStage = result.source.droppableId;
+            const destStage = result.destination.droppableId;
+            const sourceIdx = result.source.index;
+            const destIdx = result.destination.index;
+            if (sourceIdx === destIdx) return;
+            const newStages = Array.from(selectedStages);
+            const [removed] = newStages.splice(sourceIdx, 1);
+            newStages.splice(destIdx, 0, removed);
+            setSelectedStages(newStages);
+          }}
+        >
+          <Droppable droppableId="table-stages-droppable" direction="vertical" type="stage">
+            {(provided, snapshot) => (
+              <Box ref={provided.innerRef} {...provided.droppableProps}>
+                {selectedStages.length === 0 ? null : selectedStages.map((stageKey, idx) => {
+                  const tendersForStage = allTenders.filter(t => t.stage === stageKey);
+                  return (
+                    <Draggable draggableId={stageKey} index={idx} key={stageKey}>
+                      {(providedStage, snapshotStage) => (
+                        <Paper
+                          ref={providedStage.innerRef}
+                          {...providedStage.draggableProps}
+                          sx={{ mb: 3, p: 2, background: snapshotStage.isDragging ? '#e3f2fd' : '#f7fafd', borderRadius: 3, boxShadow: snapshotStage.isDragging ? 6 : 2, transition: 'box-shadow 0.2s, background 0.2s' }}
+                        >
+                          <Box {...providedStage.dragHandleProps} sx={{ mb: 2, cursor: 'grab', fontWeight: 700, color: 'primary.main', fontSize: 20 }}>
+                            {stageKey}
+                          </Box>
+                          {tendersForStage.length === 0 ? (
+                            <Typography color="text.secondary" sx={{ mb: 1 }}>Нет тендеров</Typography>
+                          ) : (
+                            <TableContainer component={Box} sx={{ borderRadius: 4, boxShadow: 0, background: 'none' }}>
+                              <Table>
+                                <TableHead>
+                                  <TableRow sx={{ background: 'linear-gradient(90deg, #1976d2 0%, #1565c0 100%)' }}>
+                                    <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Название</TableCell>
+                                    {!minimalMode && <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Номер</TableCell>}
+                                    <TableCell sx={{ color: '#fff', fontWeight: 600 }}>НМЦК</TableCell>
+                                    <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Цена победителя</TableCell>
+                                    <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Снижение</TableCell>
+                                    {!minimalMode && <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Дата окончания</TableCell>}
+                                    {!minimalMode && <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Закон</TableCell>}
+                                    {!minimalMode && <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Осталось</TableCell>}
+                                    {!minimalMode && <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Карточка рисков</TableCell>}
+                                    <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Заметка</TableCell>
+                                    {!minimalMode && <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Документы</TableCell>}
+                                    {!minimalMode && <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Цвет</TableCell>}
+                                    {!minimalMode && <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Действия</TableCell>}
+                                  </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                  {tendersForStage.map((tender) => (
+                                    <TableRow key={tender.id} hover>
+                                      <TableCell sx={{ cursor: 'pointer', userSelect: 'none' }}>{tender.name}</TableCell>
+                                      {!minimalMode && <TableCell>{tender.number}</TableCell>}
+                                      <TableCell sx={{ color: 'primary.main', fontWeight: 500 }}>{tender.nmck}</TableCell>
+                                      <TableCell sx={{ color: 'primary.main', fontWeight: 500 }}>{tender.winnerPrice}</TableCell>
+                                      <TableCell>{tender.reduction}</TableCell>
+                                      {!minimalMode && <TableCell>{tender.endDate}</TableCell>}
+                                      {!minimalMode && <TableCell>{tender.law}</TableCell>}
+                                      {!minimalMode && <TableCell sx={{ color: 'orange' }}>{tender.remaining}</TableCell>}
+                                      {!minimalMode && (
+                                        <TableCell>
+                                          <Button size="small" color="primary" sx={{ textTransform: 'none' }} onClick={() => handleOpenModal('risk', tender.id)}>Просмотр</Button>
+                                        </TableCell>
+                                      )}
+                                      <TableCell>
+                                        <Button size="small" color="primary" sx={{ textTransform: 'none' }} onClick={() => handleOpenModal('note', tender.id)}>Просмотр</Button>
+                                      </TableCell>
+                                      {!minimalMode && (
+                                        <TableCell>
+                                          {tender.documents.length ? (
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                              <Button size="small" color="primary" sx={{ minWidth: 0, textTransform: 'none', maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                {tender.documents[0].name}
+                                              </Button>
+                                              <Button size="small" color="primary" sx={{ textTransform: 'none' }} onClick={() => handleOpenModal('preview', tender.id)}>Просмотр</Button>
+                                              <IconButton size="small" color="error"><DeleteIcon /></IconButton>
+                                            </div>
+                                          ) : (
+                                            <Typography fontSize={13} color="text.secondary">Нет документов</Typography>
+                                          )}
+                                          <Button size="small" color="primary" sx={{ textTransform: 'none', mt: 1 }}>Добавить</Button>
+                                        </TableCell>
+                                      )}
+                                      {!minimalMode && (
+                                        <TableCell>
+                                          <Select
+                                            size="small"
+                                            value={tender.color}
+                                            displayEmpty
+                                            sx={{ bgcolor: '#f8fafc', borderRadius: 2, width: '100%' }}
+                                            onChange={e => setAllTenders(prev => prev.map(t => t.id === tender.id ? { ...t, color: e.target.value } : t))}
+                                          >
+                                            <MenuItem value="">Без цвета</MenuItem>
+                                            {COLORS.map((opt) => (
+                                              <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
+                                            ))}
+                                          </Select>
+                                        </TableCell>
+                                      )}
+                                      {!minimalMode && (
+                                        <TableCell>
+                                          <IconButton color="warning"><ArrowForwardIcon /></IconButton>
+                                          <IconButton color="error" onClick={() => handleOpenModal('delete', tender.id)}> <DeleteIcon /> </IconButton>
+                                        </TableCell>
+                                      )}
+                                    </TableRow>
                                   ))}
-                                </Select>
-                              </TableCell>
-                            )}
-                            {!minimalMode && (
-                              <TableCell>
-                                <IconButton color="warning"><ArrowForwardIcon /></IconButton>
-                                <IconButton color="error" onClick={() => handleOpenModal('delete')}> <DeleteIcon /> </IconButton>
-                              </TableCell>
-                            )}
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
-                )}
-              </Paper>
-            );
-          })}
-        </Box>
+                                </TableBody>
+                              </Table>
+                            </TableContainer>
+                          )}
+                        </Paper>
+                      )}
+                    </Draggable>
+                  );
+                })}
+                {provided.placeholder}
+              </Box>
+            )}
+          </Droppable>
+        </DragDropContext>
       )}
+
       {/* Модальные окна */}
       <Modal open={openModal === 'risk'} onClose={handleCloseModal}>
         <Box sx={{ p: 4, bgcolor: '#fff', borderRadius: 4, boxShadow: 6, maxWidth: 400, mx: 'auto', mt: '10vh' }}>
