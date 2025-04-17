@@ -16,7 +16,7 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import { COLORS } from '../../../config/constants';
 
 // Данные тендеров (захардкожены для примера, как в HTML)
-const tenders = [
+const initialTenders = [
   {
     id: 'tender1',
     icon: <DescriptionIcon sx={{ mr: 1, color: 'primary.main' }} />,
@@ -69,11 +69,13 @@ interface TenderViewProps {
 }
 
 export const TenderView: React.FC<TenderViewProps> = ({ selectedStages }) => {
+  const [allTenders, setAllTenders] = useState(initialTenders);
+  const fileInputs = React.useRef<{ [key: string]: HTMLInputElement | null }>({});
   // Для каждого этапа — отдельный блок
   const renderStageBlocks = () => {
     if (selectedStages.length === 0) return null;
     return selectedStages.map(stageKey => {
-      const tendersForStage = tenders.filter(t => t.stage === stageKey);
+      const tendersForStage = allTenders.filter(t => t.stage === stageKey);
       return (
         <Paper key={stageKey} sx={{ mb: 3, p: 2, background: '#f7fafd', borderRadius: 3, boxShadow: 2 }}>
           <Typography variant="h6" fontWeight={700} sx={{ mb: 2, color: 'primary.main' }}>{stageKey}</Typography>
@@ -90,6 +92,18 @@ export const TenderView: React.FC<TenderViewProps> = ({ selectedStages }) => {
                   transition: 'transform 0.2s',
                   '&:hover': { transform: 'scale(1.02)' },
                 }}>
+                  {/* Край для drag (визуальная рука) */}
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      top: 0,
+                      right: 0,
+                      width: 16,
+                      height: '100%',
+                      cursor: 'grab',
+                      zIndex: 2,
+                    }}
+                  />
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                     {tender.icon}
                     <Typography variant="subtitle1" fontWeight={600} color="text.primary">
@@ -144,7 +158,25 @@ export const TenderView: React.FC<TenderViewProps> = ({ selectedStages }) => {
                         ) : (
                           <Typography fontSize={13} color="text.secondary">Нет</Typography>
                         )}
-                        <Button size="small" color="primary" sx={{ textTransform: 'none', mt: 1 }}>Загрузить файл</Button>
+                        <input
+                          type="file"
+                          ref={el => (fileInputs.current[tender.id] = el)}
+                          style={{ display: 'none' }}
+                          onChange={e => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              setAllTenders(prev => prev.map(t =>
+                                t.id === tender.id
+                                  ? { ...t, documents: [...(t.documents || []), { name: file.name, file }] }
+                                  : t
+                              ));
+                            }
+                            e.target.value = '';
+                          }}
+                        />
+                        <Button size="small" color="primary" sx={{ textTransform: 'none', mt: 1 }} onClick={() => fileInputs.current[tender.id]?.click()}>
+                          Загрузить файл
+                        </Button>
                       </Box>
                       <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
                         <IconButton color="warning"><ArrowForwardIcon /></IconButton>
@@ -220,7 +252,7 @@ export const TenderView: React.FC<TenderViewProps> = ({ selectedStages }) => {
       {viewMode === 'rows' && (
         <Box>
           {selectedStages.length === 0 ? null : selectedStages.map(stageKey => {
-            const tendersForStage = tenders.filter(t => t.stage === stageKey);
+            const tendersForStage = allTenders.filter(t => t.stage === stageKey);
             return (
               <Paper key={stageKey} sx={{ mb: 3, p: 2, background: '#f7fafd', borderRadius: 3, boxShadow: 2 }}>
                 <Typography variant="h6" fontWeight={700} sx={{ mb: 2, color: 'primary.main' }}>{stageKey}</Typography>
@@ -369,4 +401,4 @@ export const TenderView: React.FC<TenderViewProps> = ({ selectedStages }) => {
   );
 };
 
-
+export default TenderView;
