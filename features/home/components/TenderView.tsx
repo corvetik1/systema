@@ -88,21 +88,26 @@ const TenderView: React.FC<TenderViewProps> = ({ selectedStages }) => {
             ) : (
               <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: '1fr 1fr 1fr' }, gap: 3 }}>
                 {tendersForStage.map((tender) => (
-                  <TenderCardDnD id={tender.id} key={tender.id}>
-                    <Box sx={{
-                      background: 'linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)',
-                      p: 3,
-                      borderRadius: 4,
-                      boxShadow: 3,
-                      transition: 'transform 0.2s',
-                      '&:hover': { transform: 'scale(1.02)' },
-                    }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                        {tender.icon}
-                        <Typography variant="subtitle1" fontWeight={600} color="text.primary">
-                          {tender.name}
-                        </Typography>
-                      </Box>
+                  <TenderCardDnD id={tender.id} key={tender.id}
+  renderHeader={(dragProps) => (
+    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, cursor: 'grab', background: 'linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)', borderRadius: 4, p: 1, px: 2 }} {...dragProps}>
+      {tender.icon}
+      <Typography variant="subtitle1" fontWeight={600} color="text.primary">
+        {tender.name}
+      </Typography>
+    </Box>
+  )}
+>
+  <Box sx={{
+    background: 'linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)',
+    p: 3,
+    borderRadius: 4,
+    boxShadow: 3,
+    transition: 'transform 0.2s',
+    '&:hover': { transform: 'scale(1.02)' },
+  }}>
+    {/* Заголовок будет вставлен через renderHeader */}
+                      
                       <Box sx={{ color: 'text.secondary', fontSize: 14, mb: 1 }}>
                         {!minimalMode && <Box>Номер: {tender.number}</Box>}
                         <Box>НМЦК: {tender.nmck}</Box>
@@ -376,7 +381,7 @@ const TenderView: React.FC<TenderViewProps> = ({ selectedStages }) => {
       {/* Модальные окна */}
       <Modal open={openModal === 'risk'} onClose={handleCloseModal}>
   <Box sx={{ p: 4, bgcolor: '#fff', borderRadius: 4, boxShadow: 6, maxWidth: 400, mx: 'auto', mt: '10vh' }}>
-    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, cursor: 'grab' }}>
       <WarningIcon sx={{ color: 'warning.main', mr: 1 }} />
       <Typography variant="h6">Карточка рисков</Typography>
     </Box>
@@ -392,7 +397,7 @@ const TenderView: React.FC<TenderViewProps> = ({ selectedStages }) => {
 </Modal>
 <Modal open={openModal === 'note'} onClose={handleCloseModal}>
   <Box sx={{ p: 4, bgcolor: '#fff', borderRadius: 4, boxShadow: 6, maxWidth: 400, mx: 'auto', mt: '10vh' }}>
-    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, cursor: 'grab' }}>
       <NoteIcon sx={{ color: 'primary.main', mr: 1 }} />
       <Typography variant="h6">Заметка</Typography>
     </Box>
@@ -423,7 +428,7 @@ const TenderView: React.FC<TenderViewProps> = ({ selectedStages }) => {
       
     <Modal open={openModal === 'delete'} onClose={handleCloseModal}>
       <Box sx={{ p: 4, bgcolor: '#fff', borderRadius: 4, boxShadow: 6, maxWidth: 400, mx: 'auto', mt: '10vh' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, cursor: 'grab' }}>
           <DeleteIcon sx={{ color: 'error.main', mr: 1 }} />
           <Typography variant="h6">Подтверждение удаления</Typography>
         </Box>
