@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Структура React-приложения с RTK Query</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .tree {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        ul {
+            list-style: none;
+            padding-left: 20px;
+        }
+        li {
+            margin: 5px 0;
+            position: relative;
+        }
+        li::before {
+            content: "📄";
+            margin-right: 5px;
+        }
+        li.folder::before {
+            content: "📁";
+        }
+        .comment {
+            color: #555;
+            font-size: 0.9em;
+            margin-left: 10px;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <h1>Структура React-приложения с RTK Query</h1>
+    <div class="tree">
+        <ul>
+            <li class="folder">src/ <span class="comment">Корневая папка для исходного кода приложения</span>
+                <ul>
+                    <li class="folder">api/ <span class="comment">Папка для RTK Query API и настроек, легко переключается с моков на реальный API</span>
+                        <ul>
+                            <li>index.ts <span class="comment">Настройка RTK Query baseQuery (например, с Axios), управляет переключением моков/API</span></li>
+                            <li>config.ts <span class="comment">Конфигурация API (базовый URL, заголовки для реального сервера)</span></li>
+                            <li>authApi.ts <span class="comment">RTK Query эндпоинты для авторизации, совместимы с моком auth.ts</span></li>
+                            <li>tendersApi.ts <span class="comment">RTK Query эндпоинты для тендеров, совместимы с моком tenders.ts</span></li>
+                            <li>financeApi.ts <span class="comment">RTK Query эндпоинты для финансов, совместимы с моком finance.ts</span></li>
+                            <li>accountingApi.ts <span class="comment">RTK Query эндпоинты для бухгалтерии, совместимы с моком accounting.ts</span></li>
+                            <li>analyticsApi.ts <span class="comment">RTK Query эндпоинты для аналитики, совместимы с моком analytics.ts</span></li>
+                            <li>investmentsApi.ts <span class="comment">RTK Query эндпоинты для инвестиций, совместимы с моком investments.ts</span></li>
+                            <li>notesApi.ts <span class="comment">RTK Query эндпоинты для заметок, совместимы с моком notes.ts</span></li>
+                            <li>galleryApi.ts <span class="comment">RTK Query эндпоинты для галереи, совместимы с моком gallery.ts</span></li>
+                            <li>usersApi.ts <span class="comment">RTK Query эндпоинты для пользователей, совместимы с моком users.ts</span></li>
+                            <li class="folder">utils/ <span class="comment">Утилиты для API</span>
+                                <ul>
+                                    <li>errorHandler.ts <span class="comment">Обработка ошибок API-запросов, работает с моком и реальным API</span></li>
+                                </ul>
+                            </li>
+                            <li class="folder">mocks/ <span class="comment">Моки для эмуляции API, легко заменяются реальным сервером</span>
+                                <ul>
+                                    <li>auth.ts <span class="comment">Мок-данные для авторизации, соответствуют authApi.ts</span></li>
+                                    <li>tenders.ts <span class="comment">Мок-данные для тендеров, соответствуют tendersApi.ts</span></li>
+                                    <li>finance.ts <span class="comment">Мок-данные для финансов, соответствуют financeApi.ts</span></li>
+                                    <li>accounting.ts <span class="comment">Мок-данные для бухгалтерии, соответствуют accountingApi.ts</span></li>
+                                    <li>analytics.ts <span class="comment">Мок-данные для аналитики, соответствуют analyticsApi.ts</span></li>
+                                    <li>investments.ts <span class="comment">Мок-данные для инвестиций, соответствуют investmentsApi.ts</span></li>
+                                    <li>notes.ts <span class="comment">Мок-данные для заметок, соответствуют notesApi.ts</span></li>
+                                    <li>gallery.ts <span class="comment">Мок-данные для галереи, соответствуют galleryApi.ts</span></li>
+                                    <li>users.ts <span class="comment">Мок-данные для пользователей, соответствуют usersApi.ts</span></li>
+                                    <li>index.ts <span class="comment">Настройка мок-сервера для RTK Query (например, с MSW)</span></li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </li>
+                    <li class="folder">app/ <span class="comment">Основные файлы приложения</span>
+                        <ul>
+                            <li>App.tsx <span class="comment">Главный компонент (роутинг, ThemeProvider, Redux Provider)</span></li>
+                            <li>store.ts <span class="comment">Конфигурация Redux store с RTK Query reducer’ами</span></li>
+                            <li>rootReducer.ts <span class="comment">Корневой редюсер для UI-состояния</span></li>
+                            <li>socket.ts <span class="comment">Инициализация Socket.IO клиента</span></li>
+                            <li>socketMiddleware.ts <span class="comment">Middleware для обработки WebSocket в Redux</span></li>
+                        </ul>
+                    </li>
+                    <li class="folder">auth/ <span class="comment">Модуль авторизации</span>
+                        <ul>
+                            <li>authSlice.ts <span class="comment">Redux-срез для UI-состояния авторизации</span></li>
+                            <li>authSelectors.ts <span class="comment">Селекторы для UI-состояния или кэша RTK Query</span></li>
+                            <li>authAbility.ts <span class="comment">Правила CASL для модуля авторизации (например, доступ к LoginForm)</span></li>
+                            <li class="folder">components/ <span class="comment">UI-компоненты модуля авторизации</span>
+                                <ul>
+                                    <li>LoginForm.tsx <span class="comment">Форма для входа в систему</span></li>
+                                </ul>
+                            </li>
+                            <li class="folder">styles/ <span class="comment">Стили модуля авторизации</span>
+                                <ul>
+                                    <li>index.tsx <span class="comment">Стили для компонентов авторизации</span></li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </li>
+                    <li class="folder">components/ <span class="comment">Общие переиспользуемые UI-компоненты</span>
+                        <ul>
+                            <li>AppBarAndMenu.tsx <span class="comment">Навигационная панель и меню приложения</span></li>
+                            <li>PaymentReminder.tsx <span class="comment">Компонент напоминания о платежах</span></li>
+                            <li>SupplierSearchDialog.tsx <span class="comment">Диалог поиска поставщиков</span></li>
+                            <li class="folder">layout/ <span class="comment">Макеты страниц</span>
+                                <ul>
+                                    <li>AppLayout.tsx <span class="comment">Основной макет приложения (шапка, боковое меню)</span></li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </li>
+                    <li class="folder">config/ <span class="comment">Конфигурационные файлы</span>
+                        <ul>
+                            <li>constants.ts <span class="comment">Общие константы (категории, лимиты)</span></li>
+                            <li>visibleColumnsConfig.ts <span class="comment">Настройки видимости колонок для таблиц</span></li>
+                            <li>globalAbility.ts <span class="comment">Глобальные правила CASL для всего приложения</span></li>
+                        </ul>
+                    </li>
+                    <li class="folder">features/ <span class="comment">Основные модули приложения</span>
+                        <ul>
+                            <li class="folder">tenders/ <span class="comment">Модуль тендеров</span>
+                                <ul>
+                                    <li>tendersSlice.ts <span class="comment">Redux-срез для UI-состояния тендеров (например, фильтры)</span></li>
+                                    <li>tenderSelectors.ts <span class="comment">Селекторы для UI-состояния или кэша RTK Query</span></li>
+                                    <li class="folder">components/ <span class="comment">UI-компоненты модуля тендеров, работают с моком или API</span>
+                                        <ul>
+                                            <li>TendersPage.tsx <span class="comment">Главная страница тендеров</span></li>
+                                            <li>TenderTable.tsx <span class="comment">Таблица с данными тендеров</span></li>
+                                            <li>TenderRow.tsx <span class="comment">Компонент строки таблицы тендера</span></li>
+                                            <li>TenderMenu.tsx <span class="comment">Контекстное меню для действий с тендерами</span></li>
+                                            <li>TenderEditModal.tsx <span class="comment">Модальное окно редактирования тендера</span></li>
+                                            <li>TenderFilters.tsx <span class="comment">Компонент фильтров для таблицы тендеров</span></li>
+                                            <li>ReportModal.tsx <span class="comment">Модальное окно для отчетов по тендерам</span></li>
+                                            <li>ColumnSettingsModal.tsx <span class="comment">Модальное окно настроек колонок</span></li>
+                                        </ul>
+                                    </li>
+                                    <li class="folder">hooks/ <span class="comment">Кастомные хуки для тендеров</span>
+                                        <ul>
+                                            <li>useTenderFilters.ts <span class="comment">Хук для управления фильтрами тендеров</span></li>
+                                            <li>useErrorHandler.ts <span class="comment">Хук для обработки ошибок UI</span></li>
+                                        </ul>
+                                    </li>
+                                    <li class="folder">services/ <span class="comment">Бизнес-логика тендеров</span>
+                                        <ul>
+                                            <li>tenderService.ts <span class="comment">Сервис для расчетов и обработки тендеров</span></li>
+                                        </ul>
+                                    </li>
+                                    <li class="folder">styles/ <span class="comment">Стили модуля тендеров</span>
+                                        <ul>
+                                            <li>index.tsx <span class="comment">Стили для компонентов тендеров</span></li>
+                                        </ul>
+                                    </li>
+                                </ul>
+                            </li>
+                            <li class="folder">finance/ <span class="comment">Модуль финансов</span>
+                                <ul>
+                                    <li>financeSlice.ts <span class="comment">Redux-срез для UI-состояния финансов</span></li>
+                                    <li>financeSelectors.ts <span class="comment">Селекторы для UI-состояния или кэша RTK Query</span></li>
+                                    <li class="folder">components/ <span class="comment">UI-компоненты модуля финансов, работают с моком или API</span>
+                                        <ul>
+                                            <li>FinancePage.tsx <span class="comment">Главная страница финансов</span></li>
+                                            <li>AccountCards.tsx <span class="comment">Карточки банковских счетов</span></li>
+                                            <li>CreditCards.tsx <span class="comment">Компонент управления кредитными картами</span></li>
+                                            <li>DebtTable.tsx <span class="comment">Таблица долгов</span></li>
+                                            <li>Loans.tsx <span class="comment">Компонент управления займами</span></li>
+                                            <li>TransactionForm.tsx <span class="comment">Форма добавления транзакций</span></li>
+                                            <li class="folder">dialogs/ <span class="comment">Диалоговые окна для финансов</span>
+                                                <ul>
+                                                    <li>AddCreditCardDialog.tsx <span class="comment">Диалог добавления кредитной карты</span></li>
+                                                    <li>EditCreditCardDialog.tsx <span class="comment">Диалог редактирования кредитной карты</span></li>
+                                                    <li>AddTransactionDialog.tsx <span class="comment">Диалог добавления транзакции</span></li>
+                                                    <li>EditTransactionDialog.tsx <span class="comment">Диалог редактирования транзакции</span></li>
+                                                    <li>HistoryDialog.tsx <span class="comment">Диалог просмотра истории транзакций</span></li>
+                                                    <li>ReportDialog.tsx <span class="comment">Диалог для финансовых отчетов</span></li>
+                                                </ul>
+                                            </li>
+                                        </ul>
+                                    </li>
+                                    <li class="folder">styles/ <span class="comment">Стили модуля финансов</span>
+                                        <ul>
+                                            <li>index.tsx <span class="comment">Стили для компонентов финансов</span></li>
+                                        </ul>
+                                    </li>
+                                </ul>
+                            </li>
+                            <li class="folder">accounting/ <span class="comment">Модуль бухгалтерии</span>
+                                <ul>
+                                    <li>accountingSlice.ts <span class="comment">Redux-срез для общего UI-состояния бухгалтерии</span></li>
+                                    <li class="folder">components/ <span class="comment">UI-компоненты модуля бухгалтерии, работают с моком или API</span>
+                                        <ul>
+                                            <li>AccountingPage.tsx <span class="comment">Главная страница бухгалтерии</span></li>
+                                            <li class="folder">counterparties/ <span class="comment">Компоненты для работы с контрагентами</span>
+                                                <ul>
+                                                    <li>CounterpartyList.tsx <span class="comment">Таблица контрагентов</span></li>
+                                                    <li>CounterpartyForm.tsx <span class="comment">Форма создания/редактирования контрагента</span></li>
+                                                    <li>CounterpartyCard.tsx <span class="comment">Карточка контрагента</span></li>
+                                                    <li>CounterpartyFilters.tsx <span class="comment">Фильтры для таблицы контрагентов</span></li>
+                                                </ul>
+                                            </li>
+                                            <li class="folder">documents/ <span class="comment">Компоненты для работы с документами</span>
+                                                <ul>
+                                                    <li>DocumentList.tsx <span class="comment">Таблица документов</span></li>
+                                                    <li>InvoiceForm.tsx <span class="comment">Форма создания счета</span></li>
+                                                    <li>DocumentFilters.tsx <span class="comment">Фильтры для таблицы документов</span></li>
+                                                    <li>DocumentModal.tsx <span class="comment">Модальное окно для просмотра документа</span></li>
+                                                </ul>
+                                            </li>
+                                            <li class="folder">transactions/ <span class="comment">Компоненты для операций</span>
+                                                <ul>
+                                                    <li>TransactionList.tsx <span class="comment">Таблица доходов/расходов</span></li>
+                                                    <li>TransactionForm.tsx <span class="comment">Форма добавления/редактирования операции</span></li>
+                                                    <li>TransactionFilters.tsx <span class="comment">Фильтры для операций</span></li>
+                                                    <li>TransactionSummary.tsx <span class="comment">Сводка по операциям (доходы, расходы)</span></li>
+                                                    <li>TransactionTable.tsx <span class="comment">Таблица операций с сортировкой</span></li>
+                                                </ul>
+                                            </li>
+                                            <li class="folder">taxes/ <span class="comment">Компоненты для налогов</span>
+                                                <ul>
+                                                    <li>TaxList.tsx <span class="comment">Таблица налогов</span></li>
+                                                    <li>TaxForm.tsx <span class="comment">Форма добавления налога</span></li>
+                                                    <li>TaxCalendar.tsx <span class="comment">Календарь налоговых платежей</span></li>
+                                                    <li>TaxSummary.tsx <span class="comment">Сводка по налогам</span></li>
+                                                </ul>
+                                            </li>
+                                            <li class="folder">kudir/ <span class="comment">Компоненты для КУДиР</span>
+                                                <ul>
+                                                    <li>KUDIRTable.tsx <span class="comment">Таблица КУДиР</span></li>
+                                                    <li>KUDIRFilters.tsx <span class="comment">Фильтры для таблицы КУДиР</span></li>
+                                                    <li>KUDIRExport.tsx <span class="comment">Экспорт КУДиР в PDF/Excel</span></li>
+                                                </ul>
+                                            </li>
+                                            <li class="folder">reports/ <span class="comment">Компоненты для отчетов</span>
+                                                <ul>
+                                                    <li>ReportList.tsx <span class="comment">Список отчетов</span></li>
+                                                    <li>BalanceReport.tsx <span class="comment">Отчет по балансу</span></li>
+                                                    <li>ProfitLossReport.tsx <span class="comment">Отчет о прибылях и убытках</span></li>
+                                                    <li>DebtReport.tsx <span class="comment">Отчет по задолженностям</span></li>
+                                                    <li>ReportFilters.tsx <span class="comment">Фильтры для отчетов</span></li>
+                                                </ul>
+                                            </li>
+                                            <li class="folder">settings/ <span class="comment">Компоненты для настроек</span>
+                                                <ul>
+                                                    <li>Settings.tsx <span class="comment">UI настроек бухгалтерии</span></li>
+                                                </ul>
+                                            </li>
+                                            <li class="folder">common/ <span class="comment">Общие компоненты бухгалтерии</span>
+                                                <ul>
+                                                    <li>DrawerMenu.tsx <span class="comment">Боковое меню навигации</span></li>
+                                                    <li>ErrorBoundary.tsx <span class="comment">Компонент обработки ошибок UI</span></li>
+                                                </ul>
+                                            </li>
+                                            <li class="folder">Analytics/ <span class="comment">Компоненты аналитики</span>
+                                                <ul>
+                                                    <li>Analytics.tsx <span class="comment">Главный компонент аналитики</span></li>
+                                                    <li>Charts.tsx <span class="comment">Графики для аналитики</span></li>
+                                                    <li>SummaryCards.tsx <span class="comment">Карточки с суммарными данными</span></li>
+                                                </ul>
+                                            </li>
+                                        </ul>
+                                    </li>
+                                    <li class="folder">hooks/ <span class="comment">Кастомные хуки для бухгалтерии</span>
+                                        <ul>
+                                            <li>useCounterparties.ts <span class="comment">Хук для работы с контрагентами</span></li>
+                                            <li>useTransactions.ts <span class="comment">Хук для работы с операциями</span></li>
+                                            <li>useDocuments.ts <span class="comment">Хук для работы с документами</span></li>
+                                            <li>useTaxes.ts <span class="comment">Хук для работы с налогами</span></li>
+                                            <li>useReports.ts <span class="comment">Хук для работы с отчетами</span></li>
+                                            <li>useKUDIR.ts <span class="comment">Хук для работы с КУДиР</span></li>
+                                        </ul>
+                                    </li>
+                                    <li class="folder">store/ <span class="comment">Redux-логика для бухгалтерии (только UI-состояние)</span>
+                                        <ul>
+                                            <li class="folder">analytics/ <span class="comment">Логика аналитики</span>
+                                                <ul>
+                                                    <li>slice.ts <span class="comment">Redux-срез для UI-состояния аналитики</span></li>
+                                                </ul>
+                                            </li>
+                                            <li class="folder">counterparties/ <span class="comment">Логика контрагентов</span>
+                                                <ul>
+                                                    <li>selectors.ts <span class="comment">Селекторы для UI-состояния контрагентов</span></li>
+                                                    <li>slice.ts <span class="comment">Redux-срез для UI-состояния контрагентов</span></li>
+                                                </ul>
+                                            </li>
+                                            <li class="folder">documents/ <span class="comment">Логика документов</span>
+                                                <ul>
+                                                    <li>slice.ts <span class="comment">Redux-срез для UI-состояния документов</span></li>
+                                                </ul>
+                                            </li>
+                                            <li class="folder">kudir/ <span class="comment">Логика КУДиР</span>
+                                                <ul>
+                                                    <li>selectors.ts <span class="comment">Селекторы для UI-состояния КУДиР</span></li>
+                                                    <li>slice.ts <span class="comment">Redux-срез для UI-состояния КУДиР</span></li>
+                                                    <li>types.ts <span class="comment">Локальные типы для КУДиР (специфичны для модуля)</span></li>
+                                                </ul>
+                                            </li>
+                                            <li class="folder">reports/ <span class="comment">Логика отчетов</span>
+                                                <ul>
+                                                    <li>selectors.ts <span class="comment">Селекторы для UI-состояния отчетов</span></li>
+                                                    <li>slice.ts <span class="comment">Redux-срез для UI-состояния отчетов</span></li>
+                                                </ul>
+                                            </li>
+                                            <li class="folder">settings/ <span class="comment">Логика настроек</span>
+                                                <ul>
+                                                    <li>slice.ts <span class="comment">Redux-срез для UI-состояния настроек</span></li>
+                                                </ul>
+                                            </li>
+                                            <li class="folder">taxes/ <span class="comment">Логика налогов</span>
+                                                <ul>
+                                                    <li>selectors.ts <span class="comment">Селекторы для UI-состояния налогов</span></li>
+                                                    <li>slice.ts <span class="comment">Redux-срез для UI-состояния налогов</span></li>
+                                                </ul>
+                                            </li>
+                                            <li class="folder">transactions/ <span class="comment">Логика операций</span>
+                                                <ul>
+                                                    <li>selectors.ts <span class="comment">Селекторы для UI-состояния операций</span></li>
+                                                    <li>slice.ts <span class="comment">Redux-срез для UI-состояния операций</span></li>
+                                                    <li>types.ts <span class="comment">Локальные типы для операций</span></li>
+                                                </ul>
+                                            </li>
+                                            <li>index.ts <span class="comment">Экспорт всех редюсеров бухгалтерии</span></li>
+                                        </ul>
+                                    </li>
+                                    <li class="folder">utils/ <span class="comment">Утилиты для бухгалтерии</span>
+                                        <ul>
+                                            <li>taxCalculations.ts <span class="comment">Функции для расчета налогов</span></li>
+                                            <li>documentFormatters.ts <span class="comment">Форматирование документов</span></li>
+                                            <li>reportGenerators.ts <span class="comment">Генерация отчетов</span></li>
+                                            <li>validations.ts <span class="comment">Валидация данных бухгалтерии</span></li>
+                                            <li>routes.tsx <span class="comment">Маршруты модуля бухгалтерии</span></li>
+                                            <li>constants.ts <span class="comment">Константы для бухгалтерии</span></li>
+                                        </ul>
+                                    </li>
+                                    <li class="folder">styles/ <span class="comment">Стили модуля бухгалтерии</span>
+                                        <ul>
+                                            <li>index.tsx <span class="comment">Стили для компонентов бухгалтерии</span></li>
+                                        </ul>
+                                    </li>
+                                </ul>
+                            </li>
+                            <li class="folder">home/ <span class="comment">Модуль главной страницы</span>
+                                <ul>
+                                    <li>homeSlice.ts <span class="comment">Redux-срез для UI-состояния главной страницы</span></li>
+                                    <li>homeSelectors.ts <span class="comment">Селекторы для UI-состояния или кэша RTK Query</span></li>
+                                    <li class="folder">components/ <span class="comment">UI-компоненты главной страницы, работают с моком или API</span>
+                                        <ul>
+                                            <li>HomePage.tsx <span class="comment">Главная страница (дашборд)</span></li>
+                                            <li>TenderSection.tsx <span class="comment">Секция с тендерами</span></li>
+                                            <li>TenderView.tsx <span class="comment">Компонент просмотра тендера</span></li>
+                                            <li>CreditCards.tsx <span class="comment">Карточки кредитов</span></li>
+                                            <li>HomeStyles.tsx <span class="comment">Локальные стили для компонентов (оставлен из исходной структуры)</span></li>
+                                        </ul>
+                                    </li>
+                                    <li class="folder">styles/ <span class="comment">Стили модуля главной страницы</span>
+                                        <ul>
+                                            <li>index.tsx <span class="comment">Основные стили для главной страницы</span></li>
+                                        </ul>
+                                    </li>
+                                </ul>
+                            </li>
+                            <li class="folder">notes/ <span class="comment">Модуль заметок</span>
+                                <ul>
+                                    <li>notesSlice.ts <span class="comment">Redux-срез для UI-состояния заметок</span></li>
+                                    <li>notesSelectors.ts <span class="comment">Селекторы для UI-состояния или кэша RTK Query</span></li>
+                                    <li class="folder">components/ <span class="comment">UI-компоненты модуля заметок, работают с моком или API</span>
+                                        <ul>
+                                            <li>NotesPage.tsx <span class="comment">Главная страница заметок</span></li>
+                                            <li>TaskCard.tsx <span class="comment">Карточка задачи</span></li>
+                                            <li>BookmarkCard.tsx <span class="comment">Карточка закладки</span></li>
+                                            <li>BlockCard.tsx <span class="comment">Карточка блока</span></li>
+                                        </ul>
+                                    </li>
+                                    <li class="folder">styles/ <span class="comment">Стили модуля заметок</span>
+                                        <ul>
+                                            <li>index.tsx <span class="comment">Стили для компонентов заметок</span></li>
+                                        </ul>
+                                    </li>
+                                </ul>
+                            </li>
+                            <li class="folder">gallery/ <span class="comment">Модуль галереи</span>
+                                <ul>
+                                    <li>gallerySlice.ts <span class="comment">Redux-срез для UI-состояния галереи</span></li>
+                                    <li>gallerySelectors.ts <span class="comment">Селекторы для UI-состояния или кэша RTK Query</span></li>
+                                    <li class="folder">components/ <span class="comment">UI-компоненты модуля галереи, работают с моком или API</span>
+                                        <ul>
+                                            <li>GalleryPage.tsx <span class="comment">Главная страница галереи</span></li>
+                                            <li>CategorySidebar.tsx <span class="comment">Боковая панель категорий</span></li>
+                                        </ul>
+                                    </li>
+                                    <li class="folder">styles/ <span class="comment">Стили модуля галереи</span>
+                                        <ul>
+                                            <li>index.tsx <span class="comment">Стили для компонентов галереи</span></li>
+                                        </ul>
+                                    </li>
+                                </ul>
+                            </li>
+                            <li class="folder">investments/ <span class="comment">Модуль инвестиций</span>
+                                <ul>
+                                    <li>investmentsSlice.ts <span class="comment">Redux-срез для UI-состояния инвестиций</span></li>
+                                    <li>investmentsSelectors.ts <span class="comment">Селекторы для UI-состояния или кэша RTK Query</span></li>
+                                    <li class="folder">components/ <span class="comment">UI-компоненты модуля инвестиций, работают с моком или API</span>
+                                        <ul>
+                                            <li>InvestmentsPage.tsx <span class="comment">Главная страница инвестиций</span></li>
+                                            <li>Sidebar.tsx <span class="comment">Боковая панель навигации</span></li>
+                                            <li>PortfolioSection.tsx <span class="comment">Секция портфеля</span></li>
+                                            <li>AnalyticsSection.tsx <span class="comment">Секция аналитики</span></li>
+                                            <li>HistorySection.tsx <span class="comment">Секция истории операций</span></li>
+                                            <li>ImportSection.tsx <span class="comment">Секция импорта данных</span></li>
+                                            <li>IntegrationSection.tsx <span class="comment">Секция интеграций</span></li>
+                                            <li>RiskSection.tsx <span class="comment">Секция анализа рисков</span></li>
+                                            <li>TaxesSection.tsx <span class="comment">Секция налогов</span></li>
+                                            <li>AddAssetForm.tsx <span class="comment">Форма добавления актива</span></li>
+                                        </ul>
+                                    </li>
+                                    <li class="folder">utils/ <span class="comment">Утилиты для инвестиций</span>
+                                        <ul>
+                                            <li>calculations.ts <span class="comment">Функции для расчетов инвестиций</span></li>
+                                        </ul>
+                                    </li>
+                                    <li class="folder">styles/ <span class="comment">Стили модуля инвестиций</span>
+                                        <ul>
+                                            <li>index.tsx <span class="comment">Стили для компонентов инвестиций</span></li>
+                                        </ul>
+                                    </li>
+                                </ul>
+                            </li>
+                            <li class="folder">analytics/ <span class="comment">Модуль аналитики</span>
+                                <ul>
+                                    <li>analyticsSlice.ts <span class="comment">Redux-срез для UI-состояния аналитики</span></li>
+                                    <li>analyticsSelectors.ts <span class="comment">Селекторы для UI-состояния или кэша RTK Query</span></li>
+                                    <li class="folder">components/ <span class="comment">UI-компоненты модуля аналитики, работают с моком или API</span>
+                                        <ul>
+                                            <li>AnalyticsPage.tsx <span class="comment">Главная страница аналитики</span></li>
+                                        </ul>
+                                    </li>
+                                    <li class="folder">styles/ <span class="comment">Стили модуля аналитики</span>
+                                        <ul>
+                                            <li>index.tsx <span class="comment">Стили для компонентов аналитики</span></li>
+                                        </ul>
+                                    </li>
+                                </ul>
+                            </li>
+                            <li class="folder">users/ <span class="comment">Модуль управления пользователями</span>
+                                <ul>
+                                    <li>usersSlice.ts <span class="comment">Redux-срез для UI-состояния пользователей</span></li>
+                                    <li>usersSelectors.ts <span class="comment">Селекторы для UI-состояния или кэша RTK Query</span></li>
+                                    <li class="folder">components/ <span class="comment">UI-компоненты модуля пользователей, работают с моком или API</span>
+                                        <ul>
+                                            <li>UserManagementPage.tsx <span class="comment">Главная страница управления пользователями</span></li>
+                                            <li>UserList.tsx <span class="comment">Список пользователей</span></li>
+                                            <li>UserEditModal.tsx <span class="comment">Модальное окно редактирования пользователя</span></li>
+                                            <li>UserFilters.tsx <span class="comment">Фильтры для списка пользователей</span></li>
+                                        </ul>
+                                    </li>
+                                    <li class="folder">styles/ <span class="comment">Стили модуля пользователей</span>
+                                        <ul>
+                                            <li>index.tsx <span class="comment">Стили для компонентов пользователей</span></li>
+                                        </ul>
+                                    </li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </li>
+                    <li class="folder">hooks/ <span class="comment">Общие кастомные хуки</span>
+                        <ul>
+                            <li>useErrorHandler.ts <span class="comment">Хук для обработки ошибок UI</span></li>
+                        </ul>
+                    </li>
+                    <li class="folder">styles/ <span class="comment">Глобальные стили приложения</span>
+                        <ul>
+                            <li>theme.ts <span class="comment">Настройка темы (например, для Material UI)</span></li>
+                            <li>global.css <span class="comment">Глобальные стили приложения</span></li>
+                            <li>variables.css <span class="comment">CSS-переменные (цвета, отступы)</span></li>
+                        </ul>
+                    </li>
+                    <li class="folder">utils/ <span class="comment">Общие утилиты</span>
+                        <ul>
+                            <li>logger.ts <span class="comment">Утилита для логирования</span></li>
+                            <li>dateUtils.ts <span class="comment">Функции для работы с датами</span></li>
+                            <li>numberUtils.ts <span class="comment">Форматирование чисел и валют</span></li>
+                            <li>validationUtils.ts <span class="comment">Функции валидации данных</span></li>
+                            <li>formatUtils.ts <span class="comment">Общие функции форматирования</span></li>
+                        </ul>
+                    </li>
+                    <li class="folder">types/ <span class="comment">TypeScript-типы</span>
+                        <ul>
+                            <li>counterparty.ts <span class="comment">Типы для контрагентов</span></li>
+                            <li>transaction.ts <span class="comment">Типы для операций</span></li>
+                            <li>document.ts <span class="comment">Типы для документов</span></li>
+                            <li>tax.ts <span class="comment">Типы для налогов</span></li>
+                            <li>kudir.ts <span class="comment">Типы для КУДиР</span></li>
+                            <li>report.ts <span class="comment">Типы для отчетов</span></li>
+                            <li>index.ts <span class="comment">Экспорт всех типов</span></li>
+                        </ul>
+                    </li>
+                    <li class="folder">tests/ <span class="comment">Юнит-тесты</span>
+                        <ul>
+                            <li class="folder">__tests__/ <span class="comment">Папка для юнит-тестов</span>
+                                <ul>
+                                    <li>App.test.tsx <span class="comment">Тест главного компонента приложения</span></li>
+                                    <li>TenderTable.test.tsx <span class="comment">Тест таблицы тендеров</span></li>
+                                    <li>FinancePage.test.tsx <span class="comment">Тест главной страницы финансов</span></li>
+                                    <li>AccountingPage.test.tsx <span class="comment">Тест главной страницы бухгалтерии</span></li>
+                                    <li>HomePage.test.tsx <span class="comment">Тест главной страницы (дашборд)</span></li>
+                                    <li>NotesPage.test.tsx <span class="comment">Тест главной страницы заметок</span></li>
+                                    <li>GalleryPage.test.tsx <span class="comment">Тест главной страницы галереи</span></li>
+                                    <li>InvestmentsPage.test.tsx <span class="comment">Тест главной страницы инвестиций</span></li>
+                                    <li>AnalyticsPage.test.tsx <span class="comment">Тест главной страницы аналитики</span></li>
+                                    <li>UserManagementPage.test.tsx <span class="comment">Тест главной страницы управления пользователями</span></li>
+                                    <li>LoginForm.test.tsx <span class="comment">Тест формы входа в систему</span></li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </li>
+                    <li class="folder">e2e/ <span class="comment">E2E-тесты</span>
+                        <ul>
+                            <li>login.spec.ts <span class="comment">Тест сценария входа в систему</span></li>
+                            <li>tenders.spec.ts <span class="comment">Тест сценария работы с тендерами</span></li>
+                            <li>finance.spec.ts <span class="comment">Тест сценария работы с финансами</span></li>
+                            <li>accounting.spec.ts <span class="comment">Тест сценария работы с бухгалтерией</span></li>
+                            <li>home.spec.ts <span class="comment">Тест сценария работы с главной страницей</span></li>
+                            <li>notes.spec.ts <span class="comment">Тест сценария работы с заметками</span></li>
+                            <li>gallery.spec.ts <span class="comment">Тест сценария работы с галереей</span></li>
+                            <li>investments.spec.ts <span class="comment">Тест сценария работы с инвестициями</span></li>
+                            <li>analytics.spec.ts <span class="comment">Тест сценария работы с аналитикой</span></li>
+                            <li>users.spec.ts <span class="comment">Тест сценария работы с пользователями</span></li>
+                        </ul>
+                    </li>
+                    <li class="folder">assets/ <span class="comment">Статические ресурсы</span>
+                        <ul>
+                            <li>logo.png <span class="comment">Логотип приложения</span></li>
+                            <li>favicon.ico <span class="comment">Иконка сайта</span></li>
+                        </ul>
+                    </li>
+                </ul>
+            </li>
+        </ul>
+    </div>
+</body>
+</html>
