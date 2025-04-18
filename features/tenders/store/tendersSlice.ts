@@ -152,6 +152,15 @@ const tendersSlice = createSlice({
     resetTenders() {
       return initialState;
     },
+    // Загрузка демо-данных тендеров
+    loadDemoTenders(state, action: PayloadAction<Tender[]>) {
+      const tendersData = action.payload;
+      state.tenders.byId = tendersData.reduce((acc: { [key: number]: Tender }, tender) => {
+        acc[tender.id] = tender;
+        return acc;
+      }, {});
+      state.tenders.allIds = tendersData.map((t) => t.id);
+    },
     // Установка выбранных этапов для фильтрации (для TendersPage)
     setSelectedStages(state, action: PayloadAction<string[]>) {
       state.selectedStages = action.payload;
@@ -306,13 +315,14 @@ export const {
   setHeaderNote,
   setTenderBudget,
   addTenderRealtime,
+  loadDemoTenders,
   updateTenderRealtime,
   deleteTenderRealtime,
   clearTenderError,
   resetTenders,
   setSelectedStages,
-  setLoading, // Добавлено для tenderActions.ts
-  setError,   // Добавлено для tenderActions.ts
+  setLoading,
+  setError,
 } = tendersSlice.actions;
 
 // Экспорт асинхронных действий из tenderActions.ts

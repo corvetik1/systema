@@ -1,5 +1,5 @@
 // src/features/tenders/services/tenderService.ts
-import api from 'api';
+import api from '../../../api';
 
 /**
  * Сервис для работы с тендерами через API.

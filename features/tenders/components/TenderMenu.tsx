@@ -148,12 +148,12 @@ const TenderMenu: React.FC<TenderMenuProps> = ({
   const menuButtons = [
     {
       id: 'loadDB',
-      label: 'Загрузить из БД',
+      label: 'Загрузить демо-данные',
       icon: <CloudDownload />,
       onClick: handleLoadFromDB,
       style: { backgroundColor: '#1976D2' },
       disabled: isLoading,
-      tooltip: 'Загрузить данные тендеров из базы данных',
+      tooltip: 'Загрузить демонстрационные данные тендеров',
     },
     {
       id: 'uploadExcel',
@@ -214,9 +214,9 @@ const TenderMenu: React.FC<TenderMenuProps> = ({
   return (
     <>
       <Toolbar sx={{ padding: '8px', minHeight: 'auto', backgroundColor: '#f5f5f5', borderRadius: '4px', marginBottom: 2, flexWrap: 'wrap' }}>
-        <Grid container spacing={1} alignItems="center">
+        <Grid container component="div" spacing={1} alignItems="center">
           {menuButtons.map((button) => (
-            <Grid item key={button.id}>
+            <Grid item component="div" key={button.id}>
               <Tooltip title={button.tooltip} arrow>
                 <Button
                   variant="contained"

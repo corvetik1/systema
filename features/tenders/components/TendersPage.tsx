@@ -22,7 +22,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from 'app/store';
 import { tenderService } from '../services/tenderService';
 import { fetchTenders, addTender, updateTender, deleteTender } from '../tenderActions';
-import { setSelectedRows, setSortConfig, updateHeaderNote, addTenderRealtime } from '../store/tendersSlice';
+import { setSelectedRows, setSortConfig, updateHeaderNote, addTenderRealtime, loadDemoTenders } from '../store/tendersSlice';
 import logger from '../../../utils/logger';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
@@ -190,11 +190,9 @@ const TendersPage: React.FC = () => {
   }, [tenderState.tenders, tenderState.tenderBudgets]);
 
   const handleLoadFromDB = useCallback(() => {
-    demoTenders.forEach((tender) => {
-      dispatch(addTenderRealtime(tender));
-    });
+    dispatch(loadDemoTenders(demoTenders));
     logger.debug('TendersPage: Демо-данные загружены');
-    handleNotify('Демо-данные загружены (3 тендера)', 'success');
+    handleNotify(`Демо-данные загружены (${demoTenders.length} тендера)`, 'success');
   }, [dispatch, handleNotify]);
 
   const handleCellChange = useCallback(
