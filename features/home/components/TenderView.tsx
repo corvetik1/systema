@@ -443,4 +443,4 @@ const TenderView: React.FC<TenderViewProps> = ({ selectedStages }) => {
   );
 };
 
-export default TenderView;    
+export default TenderView;
