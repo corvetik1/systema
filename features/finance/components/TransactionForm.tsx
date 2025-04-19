@@ -1,6 +1,6 @@
 // src/features/finance/components/TransactionForm.tsx
 import React, { useEffect } from 'react';
-import Grid from '@mui/material/Grid';
+import { Grid } from '@mui/material';
 import {
   TextField,
   FormControl,
@@ -17,22 +17,22 @@ import logger from '../../../utils/logger';
 import { setSnackbar } from '../../../auth/authSlice';
 import { FINANCE_TRANSACTION_TYPES_ARRAY, FINANCE_INCOME_CATEGORIES, FINANCE_EXPENSE_CATEGORIES } from '../../../config/constants';
 
-interface TransactionFormProps {
-  accounts: { id: number; name: string }[];
-  newTransaction: NewTransaction;
-  setNewTransaction: (data: NewTransaction) => void;
-  handleAddTransaction: () => void;
-  disabled: boolean;
-  role: string;
-}
-
-interface NewTransaction {
+export interface NewTransaction {
   accountId: string;
   transferToAccountId: number | null;
   type: 'income' | 'expense' | 'transfer_in';
   amount: string;
   description: string;
   category: string;
+}
+
+interface TransactionFormProps {
+  accounts: { id: number; name: string }[];
+  newTransaction: NewTransaction;
+  setNewTransaction: React.Dispatch<React.SetStateAction<NewTransaction>>;
+  handleAddTransaction: () => void;
+  disabled: boolean;
+  role: string;
 }
 
 const TransactionForm: React.FC<TransactionFormProps> = ({

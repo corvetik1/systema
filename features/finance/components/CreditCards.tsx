@@ -1,15 +1,11 @@
 // src/features/finance/components/CreditCards.tsx
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   Box,
   Typography,
   Fade,
   IconButton,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   TextField,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -20,34 +16,23 @@ import { ru } from 'date-fns/locale';
 import EditCreditCardDialog from './dialogs/EditCreditCardDialog';
 import { AccountCard } from './FinanceStyles';
 import { RootState, AppDispatch } from '../../../app/store';
-import { deleteTransaction, saveCreditCard } from '../store/financeActions';
+import { deleteTransaction, saveCreditCard, fetchAccounts } from '../store/financeActions';
 import logger from '../../../utils/logger';
 import { setSnackbar } from '../../../auth/authSlice';
 import { Account, Transaction } from '../store/financeSlice';
-import { FINANCE_TRANSACTION_TYPES } from '../../../config/constants';
+import CreditCard from './CreditCard';
 
 const CreditCards: React.FC = () => {
   const dispatch: AppDispatch = useDispatch();
   const { accounts, transactions } = useSelector((state: RootState) => state.finance);
 
+  useEffect(() => { dispatch(fetchAccounts()); }, [dispatch]);
+
   const [expandedAccount, setExpandedAccount] = useState<number | null>(null);
   const [expandedMonths, setExpandedMonths] = useState<{ [key: number]: { [key: string]: boolean } }>({});
   const [editingAccountId, setEditingAccountId] = useState<number | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState<boolean>(false);
-  // Тип для редактируемой кредитной карты (дублирует интерфейс из EditCreditCardDialogProps)
-interface CreditCardEdit {
-  id: number;
-  name: string;
-  credit_limit: number;
-  debt: number;
-  grace_period: string;
-  min_payment: number;
-  payment_due_date: string;
-  user_id: number;
-}
-
-const [editedCreditCard, setEditedCreditCard] = useState<CreditCardEdit | null>(null);
-  const [filterType, setFilterType] = useState<string>('all');
+  const [editedCreditCard, setEditedCreditCard] = useState<Account | null>(null);
   const [accountNames, setAccountNames] = useState<{ [key: number]: string }>(
     Object.values(accounts.byId).reduce((acc, account) => {
       acc[account.id] = account.name;
@@ -117,15 +102,14 @@ const [editedCreditCard, setEditedCreditCard] = useState<CreditCardEdit | null>(
   }, [dispatch]);
 
   const handleOpenEditDialog = useCallback((account: Account) => {
+    // Clone the account and include type and balance for editing
     setEditedCreditCard({
-      id: account.id,
-      name: account.name,
+      ...account,
       credit_limit: account.credit_limit ?? 0,
-      debt: (account as any).debt ?? 0,
-      grace_period: (account as any).grace_period ?? '',
-      min_payment: (account as any).min_payment ?? 0,
-      payment_due_date: (account as any).payment_due_date ?? '',
-      user_id: (account as any).user_id ?? 0,
+      debt: account.debt ?? 0,
+      grace_period: account.grace_period ?? '',
+      min_payment: account.min_payment ?? 0,
+      payment_due_date: account.payment_due_date ?? '',
     });
     setEditDialogOpen(true);
   }, []);
@@ -163,8 +147,7 @@ const [editedCreditCard, setEditedCreditCard] = useState<CreditCardEdit | null>(
 
   const groupedTransactions = useMemo(() => {
     return accountsArray.map((account) => {
-      const accountTxs = (transactionsByAccountId[account.id] || [])
-        .filter((t) => filterType === 'all' || t.type === filterType);
+      const accountTxs = transactionsByAccountId[account.id] || [];
 
       const byMonth = accountTxs.reduce(
         (acc: { [key: string]: { monthName: string; transactions: Transaction[] } }, tx) => {
@@ -185,248 +168,32 @@ const [editedCreditCard, setEditedCreditCard] = useState<CreditCardEdit | null>(
         ),
       };
     });
-  }, [accountsArray, transactionsByAccountId, filterType]);
+  }, [accountsArray, transactionsByAccountId]);
 
   return (
     <Fade in={true} timeout={500}>
       <Box className="account-cards">
-        <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap' }}>
-          <FormControl sx={{ minWidth: 150, flexGrow: 1 }} size="small">
-            <InputLabel>Тип</InputLabel>
-            <Select
-              value={filterType}
-              onChange={(e) => setFilterType(e.target.value as string)}
-              label="Тип"
-            >
-              {FINANCE_TRANSACTION_TYPES.map((type) => (
-                <MenuItem key={type.value} value={type.value}>
-                  {type.label}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Box>
         {accountsArray.length === 0 ? (
-          <Typography sx={{ p: 2, textAlign: 'center', color: '#757575' }}>
-            Нет доступных кредитных карт
-          </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 200 }}>
+            <CreditCard
+              creditLimit={100000}
+              debt={25000}
+              gracePeriod="50"
+              minPayment={5000}
+              paymentDueDate="30.04.2025"
+            />
+          </Box>
         ) : (
-          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))', gap: 2 }} className="cards-container">
-            {groupedTransactions.map((account) => (
-              <AccountCard key={account.id} id={`card-${account.id}`} sx={{ background: 'linear-gradient(135deg, #ffffff, #f8bbd0)' }}>
-                <Box className="decor-pattern" />
-                <Box className="card-header">
-                  {editingAccountId === account.id ? (
-                    <TextField
-                      className="edit-input"
-                      value={accountNames[account.id]}
-                      onChange={(e) =>
-                        setAccountNames((prev) => ({
-                          ...prev,
-                          [account.id]: e.target.value,
-                        }))
-                      }
-                      onBlur={() => handleSaveCardTitle(account.id, accountNames[account.id])}
-                      onKeyPress={(e) => {
-                        if (e.key === 'Enter') handleSaveCardTitle(account.id, accountNames[account.id]);
-                      }}
-                      autoFocus
-                      fullWidth
-                    />
-                  ) : (
-                    <Typography
-                      className="card-title"
-                      onClick={() => handleEditCardTitle(account.id)}
-                    >
-                      {accountNames[account.id]}
-                    </Typography>
-                  )}
-                  <Box className="card-actions">
-                    <Typography
-                      className="expand-btn"
-                      onClick={() => handleExpandAccount(account.id)}
-                      sx={{
-                        transform: expandedAccount === account.id ? 'rotate(180deg)' : 'rotate(0deg)',
-                        transition: 'transform 0.3s ease',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      ▼
-                    </Typography>
-                    <IconButton
-                      onClick={() => handleOpenEditDialog(account)}
-                      sx={{ color: '#1976d2' }}
-                    >
-                      <EditIcon />
-                    </IconButton>
-                  </Box>
-                </Box>
-                <Box
-                  className="card-info"
-                  sx={{
-                    display: 'flex',
-                    flexWrap: 'nowrap',
-                    gap: '20px',
-                    fontSize: '1rem',
-                    color: '#424242',
-                    mb: 2,
-                    overflowX: 'auto',
-                  }}
-                >
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
-                    <Box
-                      sx={{
-                        width: '24px',
-                        height: '24px',
-                        backgroundImage: 'url(https://img.icons8.com/ios-filled/24/4caf50/wallet.png)',
-                        backgroundSize: 'cover',
-                      }}
-                    />
-                    <Typography
-                      className="highlight balance"
-                      sx={{ fontFamily: 'Montserrat', fontSize: '1.1rem', fontWeight: 600, color: '#4caf50' }}
-                    >
-                      Баланс: {account.balance.toLocaleString('ru-RU')} руб.
-                    </Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
-                    <Box
-                      sx={{
-                        width: '24px',
-                        height: '24px',
-                        backgroundImage: 'url(https://img.icons8.com/ios-filled/24/f44336/credit-card.png)',
-                        backgroundSize: 'cover',
-                      }}
-                    />
-                    <Typography
-                      className="highlight debt"
-                      sx={{ fontFamily: 'Montserrat', fontSize: '1.1rem', fontWeight: 600, color: '#f44336' }}
-                    >
-                      Долг: {(account.debt || 0).toLocaleString('ru-RU')} руб.
-                    </Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
-                    <Box
-                      sx={{
-                        width: '24px',
-                        height: '24px',
-                        backgroundImage: 'url(https://img.icons8.com/ios-filled/24/1976d2/credit-limit.png)',
-                        backgroundSize: 'cover',
-                      }}
-                    />
-                    <Typography sx={{ fontFamily: 'Montserrat', fontSize: '0.9rem', color: '#424242' }}>
-                      Лимит: {(account.credit_limit || 0).toLocaleString('ru-RU')} руб.
-                    </Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
-                    <Box
-                      sx={{
-                        width: '24px',
-                        height: '24px',
-                        backgroundImage: 'url(https://img.icons8.com/ios-filled/24/1976d2/minimum-payment.png)',
-                        backgroundSize: 'cover',
-                      }}
-                    />
-                    <Typography sx={{ fontFamily: 'Montserrat', fontSize: '0.9rem', color: '#424242' }}>
-                      Мин. платеж: {(account.min_payment || 0).toLocaleString('ru-RU')} руб.
-                    </Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
-                    <Box
-                      sx={{
-                        width: '24px',
-                        height: '24px',
-                        backgroundImage: 'url(https://img.icons8.com/ios-filled/24/757575/calendar.png)',
-                        backgroundSize: 'cover',
-                      }}
-                    />
-                    <Typography sx={{ fontFamily: 'Montserrat', fontSize: '0.9rem', color: '#757575', fontStyle: 'italic' }}>
-                      Платеж: {account.payment_due_date || '-'}
-                    </Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
-                    <Box
-                      sx={{
-                        width: '24px',
-                        height: '24px',
-                        backgroundImage: 'url(https://img.icons8.com/ios-filled/24/757575/time.png)',
-                        backgroundSize: 'cover',
-                      }}
-                    />
-                    <Typography sx={{ fontFamily: 'Montserrat', fontSize: '0.9rem', color: '#757575', fontStyle: 'italic' }}>
-                      Льготный: {account.grace_period || '-'}
-                    </Typography>
-                  </Box>
-                </Box>
-                <Box
-                  className="months"
-                  sx={{ display: expandedAccount === account.id ? 'block' : 'none' }}
-                >
-                  {account.monthlyGroups.length > 0 ? (
-                    account.monthlyGroups.map((monthGroup) => (
-                      <Box key={monthGroup.monthName} className="month">
-                        <Box
-                          className="month-header"
-                          onClick={() => toggleMonthExpansion(account.id, monthGroup.monthName)}
-                          sx={{ cursor: 'pointer' }}
-                        >
-                          <Typography className="month-title">
-                            {monthGroup.monthName}
-                          </Typography>
-                          <Typography
-                            sx={{
-                              transform: expandedMonths[account.id]?.[monthGroup.monthName]
-                                ? 'rotate(180deg)'
-                                : 'rotate(0deg)',
-                              transition: 'transform 0.3s ease',
-                            }}
-                          >
-                            ▼
-                          </Typography>
-                        </Box>
-                        <Box
-                          className="transactions"
-                          sx={{
-                            display: expandedMonths[account.id]?.[monthGroup.monthName]
-                              ? 'block'
-                              : 'none',
-                          }}
-                        >
-                          {monthGroup.transactions.map((tx) => (
-                            <Box key={tx.id} className="transaction">
-                              <Box className="transaction-info">
-                                <Typography
-                                  className={`transaction-amount ${
-                                    tx.type === 'income' || tx.type === 'transfer_in' ? 'income' : 'expense'
-                                  }`}
-                                >
-                                  {tx.type === 'income' || tx.type === 'transfer_in' ? '+' : '-'} {formatNumber(tx.amount)} руб.
-                                </Typography>
-                                <Typography className="transaction-desc">
-                                  {tx.description || 'Нет описания'}
-                                </Typography>
-                                <Typography className="transaction-date">
-                                  {tx.date}{tx.category ? ` (${tx.category})` : ''}
-                                </Typography>
-                              </Box>
-                              <IconButton
-                                onClick={() => handleDeleteTransaction(tx.id)}
-                                sx={{ color: '#f44336' }}
-                              >
-                                <DeleteIcon />
-                              </IconButton>
-                            </Box>
-                          ))}
-                        </Box>
-                      </Box>
-                    ))
-                  ) : (
-                    <Typography sx={{ p: 2, textAlign: 'center', color: '#757575' }}>
-                      Нет транзакций
-                    </Typography>
-                  )}
-                </Box>
-              </AccountCard>
+          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', justifyContent: 'center' }}>
+            {accountsArray.map((account) => (
+              <CreditCard
+                key={account.id}
+                creditLimit={account.credit_limit ?? 0}
+                debt={account.debt ?? 0}
+                gracePeriod={account.grace_period ?? ''}
+                minPayment={account.min_payment ?? 0}
+                paymentDueDate={account.payment_due_date ?? ''}
+              />
             ))}
           </Box>
         )}

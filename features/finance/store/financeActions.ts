@@ -144,13 +144,13 @@ export const createTransaction = createAsyncThunk(
 
 /**
  * Добавление новой транзакции (альтернатива для FinancePage).
- * @param {Transaction} transactionData - Данные новой транзакции.
+ * @param {Omit<Transaction, 'id'>} transactionData - Данные новой транзакции.
  * @returns {Promise<Transaction>} Объект созданной транзакции.
  * @throws {string} Сообщение об ошибке при неудачном добавлении.
  */
-export const addTransaction = createAsyncThunk(
+export const addTransaction = createAsyncThunk<Transaction, Omit<Transaction, 'id'>>(
   'finance/addTransaction',
-  async (transactionData: Transaction, { dispatch, rejectWithValue }) => {
+  async (transactionData: Omit<Transaction, 'id'>, { dispatch, rejectWithValue }) => {
     try {
       const response = await api.addTransaction(transactionData);
       logger.debug('addTransaction: Транзакция добавлена', { transactionId: response.id });
@@ -399,31 +399,23 @@ export const deleteLoan = createAsyncThunk(
 /**
  * Загрузка начальных финансовых данных.
  * @param {{ userId: number }} params - ID пользователя.
- * @returns {Promise<{ accounts: Account[]; transactions: Transaction[]; debts: Debt[]; loans: Loan[]; paidDebts: { [key: string]: boolean } }>} Объект с массивами данных.
- * @throws {string} Сообщение об ошибке при неудачной загрузке.
  */
-export const fetchInitialData = createAsyncThunk<{
-  accounts: Account[];
-  transactions: Transaction[];
-  debts: Debt[];
-  loans: Loan[];
-  paidDebts: { [key: string]: boolean };
-}, { userId: number }>(
+export const fetchInitialData = createAsyncThunk<
+  { accounts: Account[]; transactions: Transaction[]; debts: Debt[]; loans: Loan[]; paidDebts: Record<string, boolean> },
+  { userId: number }
+>(
   'finance/fetchInitialData',
-  async ({ userId }: { userId: number }, { dispatch, rejectWithValue }) => {
+  async ({ userId }, { dispatch, rejectWithValue }) => {
     try {
-      const response = await api.getAllFinanceData(userId);
-      logger.debug('fetchInitialData: Данные успешно загружены', {
-        accounts: response.accounts.length,
-        transactions: response.transactions.length,
-        debts: response.debts.length,
-        loans: response.loans.length,
-      });
-      dispatch(setSnackbar({ message: 'Финансовые данные загружены', severity: 'success' }));
-      return response;
+      const accounts = await dispatch(fetchAccounts()).unwrap();
+      const transactions = await dispatch(fetchTransactions()).unwrap();
+      const debts = await dispatch(fetchDebts()).unwrap();
+      const loans = await dispatch(fetchLoans()).unwrap();
+      const paidDebts: Record<string, boolean> = {};
+      dispatch(setSnackbar({ message: 'Все финансовые данные загружены', severity: 'success' }));
+      return { accounts, transactions, debts, loans, paidDebts };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Не удалось загрузить данные';
-      logger.error('fetchInitialData: Ошибка загрузки данных', { error: errorMessage });
+      const errorMessage = error instanceof Error ? error.message : 'Ошибка загрузки финансовых данных';
       dispatch(setSnackbar({ message: errorMessage, severity: 'error' }));
       return rejectWithValue(errorMessage);
     }

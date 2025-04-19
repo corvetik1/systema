@@ -16,8 +16,8 @@ import { parse, format } from 'date-fns';
 interface EditCreditCardDialogProps {
   open: boolean;
   onClose: () => void;
-  editedCreditCard: { id: number; name: string; credit_limit: number; debt: number; grace_period: string; min_payment: number; payment_due_date: string; user_id: string } | null;
-  setEditedCreditCard: (card: { id: number; name: string; credit_limit: number; debt: number; grace_period: string; min_payment: number; payment_due_date: string; user_id: number } | null) => void;
+  editedCreditCard: Account | null;
+  setEditedCreditCard: React.Dispatch<React.SetStateAction<Account | null>>;
   handleSaveCreditCard: () => void;
 }
 

@@ -1,7 +1,7 @@
 // src/features/finance/components/dialogs/EditLoanDialog.tsx
 import React, { useState, useCallback } from 'react';
 import { useDispatch } from 'react-redux';
-import { AppDispatch } from 'app/store';
+import { AppDispatch } from '../../../../app/store';
 import logger from '../../../../utils/logger';
 import { setSnackbar } from '../../../../auth/authSlice';
 import { Loan } from '../../store/financeSlice';
@@ -11,22 +11,11 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { parse, format } from 'date-fns';
 
-interface Loan {
-  user_id: string;
-  name: string;
-  amount?: number;
-  monthly_payment?: number;
-  payment_due_day?: string;
-  rate?: number;
-  term?: number;
-  debt?: number;
-}
-
 interface EditLoanDialogProps {
   open: boolean;
   onClose: () => void;
   editedLoan: Loan | null;
-  setEditedLoan: (loan: Loan | null) => void;
+  setEditedLoan: React.Dispatch<React.SetStateAction<Loan | null>>;
   handleSaveEditedLoan: () => void;
 }
 

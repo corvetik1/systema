@@ -116,7 +116,7 @@ export const DecorDots = styled(Box)({
 });
 
 // Заголовки
-export const SectionTitle: StyledComponent<{}, { variant?: 'h1' | 'h2' | 'h3' }, { theme: Theme }> = styled(Typography)(
+export const SectionTitle = styled(Typography)<{ variant?: 'h1' | 'h2' | 'h3' }>(
   ({ theme, variant }: { theme: Theme; variant?: 'h1' | 'h2' | 'h3' }) => ({
     fontFamily: "'Poppins', sans-serif",
     fontWeight: 600,
@@ -284,6 +284,136 @@ export const CancelButton = styled(Button)({
   '&:hover': {
     background: '#f5f5f5',
   },
+});
+
+// Стили для отдельной кредитной карты
+export const CreditCardContainer = styled(Box)(({ theme }) => ({
+  width: '300px',
+  height: '180px',
+  borderRadius: '16px',
+  background: 'linear-gradient(135deg, #1976d2, #42a5f5)',
+  color: '#fff',
+  padding: '16px',
+  display: 'flex',
+  flexDirection: 'column',
+  justifyContent: 'space-between',
+  boxShadow: '0 8px 20px rgba(0, 0, 0, 0.2)',
+  fontFamily: "'Poppins', sans-serif",
+  position: 'relative',
+}));
+
+export const CreditCardHeader = styled(Box)({
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+});
+
+export const CreditCardNumber = styled(Typography)({
+  fontSize: '1.2rem',
+  letterSpacing: '2px',
+  fontWeight: 500,
+});
+
+export const CreditCardExpiry = styled(Typography)({
+  fontSize: '0.9rem',
+});
+
+export const CreditCardHolder = styled(Typography)({
+  marginTop: '8px',
+  fontSize: '1rem',
+  fontWeight: 400,
+});
+
+export const CreditCardFooter = styled(Box)({
+  display: 'flex',
+  justifyContent: 'space-between',
+  fontSize: '0.9rem',
+});
+
+export const CreditCardInfo = styled(Box)({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '4px',
+  marginTop: '8px',
+});
+
+export const CreditCardInfoItem = styled(Typography)({
+  fontSize: '0.9rem',
+  color: '#fff',
+});
+
+// Стили для нового дизайна кредитной карты
+export const CreditCardSimpleContainer = styled(Box)({
+  width: '360px',
+  background: '#fff',
+  borderRadius: '12px',
+  boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+  padding: '20px',
+  color: '#333',
+});
+
+export const CreditCardHeaderSimple = styled(Box)({
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  marginBottom: '20px',
+});
+
+export const CreditCardTitle = styled(Typography)({
+  fontSize: '1.3rem',
+  color: '#4e54c8',
+});
+
+export const CreditCardDueDate = styled(Box)({
+  fontSize: '0.9rem',
+  textAlign: 'right',
+  '& strong': { fontWeight: 600 },
+});
+
+export const CreditCardBody = styled(Box)({
+  display: 'flex',
+  flexDirection: 'column',
+});
+
+export const CreditCardItem = styled(Box)({
+  marginBottom: '15px',
+});
+
+export const CreditCardLabel = styled(Typography)({
+  fontSize: '0.85rem',
+  color: '#666',
+  marginBottom: '5px',
+});
+
+export const CreditCardValue = styled(Typography)({
+  fontSize: '1.1rem',
+  fontWeight: 'bold',
+});
+
+export const CreditCardProgressContainerSimple = styled(Box)({
+  background: '#e0e0e0',
+  borderRadius: '8px',
+  overflow: 'hidden',
+  height: '12px',
+  marginTop: '8px',
+});
+
+export const CreditCardProgress = styled(Box)<{ progress: number }>(({ progress }) => ({
+  height: '100%',
+  background: 'linear-gradient(90deg, #4e54c8, #8f94fb)',
+  width: `${progress}%`,
+}));
+
+export const CreditCardFooterSimple = styled(Box)({
+  marginTop: '20px',
+  display: 'flex',
+  justifyContent: 'space-between',
+  fontSize: '0.85rem',
+  color: '#555',
+});
+
+export const CreditCardFooterItem = styled(Box)({
+  '& strong': { display: 'block' },
 });
 
 // Стили для карточек счетов (AccountCards)
@@ -465,6 +595,14 @@ export const AccountCard = styled(Box)({
     fontWeight: 400,
     margin: 0,
   },
+});
+
+// Стили для контейнера аккаунтов
+export const AccountsContainer = styled(Box)({
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+  gap: '20px',
+  marginTop: '20px',
 });
 
 // Стили для диалогов

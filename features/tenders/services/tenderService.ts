@@ -9,8 +9,7 @@ export const tenderService = {
    * Получение списка всех тендеров.
    */
   fetchTenders: async () => {
-    const response = await api.get('/tenders');
-    return response.data;
+    return await api.getTenders();
   },
 
   /**
@@ -18,8 +17,7 @@ export const tenderService = {
    * @param {any} tenderData - Данные нового тендера.
    */
   addTender: async (tenderData: any) => {
-    const response = await api.post('/tenders', tenderData);
-    return response.data;
+    return await api.addTender(tenderData);
   },
 
   /**
@@ -28,8 +26,7 @@ export const tenderService = {
    * @param {any} tenderData - Обновленные данные тендера.
    */
   updateTender: async (id: number, tenderData: any) => {
-    const response = await api.put(`/tenders/${id}`, tenderData);
-    return response.data;
+    return await api.updateTender(id, tenderData);
   },
 
   /**
@@ -37,7 +34,7 @@ export const tenderService = {
    * @param {number} id - ID тендера.
    */
   deleteTender: async (id: number) => {
-    await api.delete(`/tenders/${id}`);
+    await api.deleteTender(id);
     return id;
   },
 };

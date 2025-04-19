@@ -25,6 +25,7 @@ import {
   updateLoan,
   deleteLoan,
 } from './financeActions';
+import { RootState } from '../../../app/store';
 
 /**
  * Интерфейс счёта.
@@ -51,6 +52,7 @@ export interface Transaction {
   id: number;
   debit_card_id?: number;
   credit_card_id?: number;
+  loan_id?: number;
   transfer_to_debit_card_id?: number;
   transfer_to_credit_card_id?: number;
   type: 'income' | 'expense' | 'transfer_in' | 'transfer_out';
@@ -83,6 +85,8 @@ export interface Loan {
   name: string;
   amount: number;
   interest_rate: number;
+  rate?: number;
+  debt?: number;
   term: number;
   end_date?: string;
   monthly_payment?: number;
@@ -945,7 +949,7 @@ const financeSlice = createSlice({
         state.error = null;
         state.successMessage = null;
       })
-      .addCase(fetchInitialData.fulfilled, (state, action) => {
+      .addCase(fetchInitialData.fulfilled, (state, action: PayloadAction<{ accounts: Account[]; transactions: Transaction[]; debts: Debt[]; loans: Loan[]; paidDebts: Record<string, boolean> }>) => {
         logger.debug('fetchInitialData.fulfilled: Данные успешно загружены', action.payload);
         const { accounts, transactions, debts, loans, paidDebts } = action.payload;
         state.accounts = {
@@ -995,16 +999,13 @@ const financeSlice = createSlice({
         state.error = null;
         state.successMessage = null;
       })
-      .addCase(addTransaction.fulfilled, (state, action) => {
+      .addCase(addTransaction.fulfilled, (state, action: PayloadAction<Transaction>) => {
         logger.debug('addTransaction.fulfilled: Транзакция успешно добавлена', action.payload);
-        const { data } = action.payload;
-        const newTransactions = Array.isArray(data) ? data : [data];
-        newTransactions.forEach((tx: Transaction) => {
-          state.transactions.byId[tx.id] = tx;
-          if (!state.transactions.allIds.includes(tx.id)) {
-            state.transactions.allIds.push(tx.id);
-          }
-        });
+        const tx = action.payload;
+        state.transactions.byId[tx.id] = tx;
+        if (!state.transactions.allIds.includes(tx.id)) {
+          state.transactions.allIds.push(tx.id);
+        }
         state.loading = false;
         state.lastUpdated = new Date().toISOString();
         state.successMessage = 'Транзакция успешно добавлена';
@@ -1023,12 +1024,12 @@ const financeSlice = createSlice({
         state.error = null;
         state.successMessage = null;
       })
-      .addCase(addDebitCard.fulfilled, (state, action) => {
+      .addCase(addDebitCard.fulfilled, (state, action: PayloadAction<Account>) => {
         logger.debug('addDebitCard.fulfilled: Дебетовая карта добавлена', action.payload);
-        const { data } = action.payload;
-        state.accounts.byId[data.id] = data;
-        if (!state.accounts.allIds.includes(data.id)) {
-          state.accounts.allIds.push(data.id);
+        const account = action.payload;
+        state.accounts.byId[account.id] = account;
+        if (!state.accounts.allIds.includes(account.id)) {
+          state.accounts.allIds.push(account.id);
         }
         state.loading = false;
         state.lastUpdated = new Date().toISOString();
@@ -1064,11 +1065,12 @@ const financeSlice = createSlice({
         state.successMessage = 'Статус оплаты обновлён';
       })
       .addCase(togglePaidDebt.rejected, (state, action) => {
-        logger.error('togglePaidDebt.rejected: Ошибка переключения статуса оплаты', action.payload);
-        const { debtKey, paidDebts } = action.payload;
+        const payload = action.payload as { error: string; debtKey: string; paidDebts: Record<string, boolean> };
+        logger.error('togglePaidDebt.rejected: Ошибка переключения статуса оплаты', payload);
+        const { error, debtKey, paidDebts } = payload;
         state.paidDebts = paidDebts;
         state.loading = false;
-        state.error = action.payload.error || 'Ошибка переключения статуса оплаты';
+        state.error = error || 'Ошибка переключения статуса оплаты';
         state.successMessage = null;
       })
 

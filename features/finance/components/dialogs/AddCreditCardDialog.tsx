@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../../../app/store';
 import { addCreditCard } from '../../store/financeActions';
 import logger from '../../../../utils/logger';
-import { setSnackbar, SetSnackbarPayload } from '../../../../auth/authSlice';
+import { setSnackbar } from '../../../../auth/authSlice';
 import { Account } from '../../store/financeSlice';
 import { StyledDialog } from '../FinanceStyles';
 import { LocalizationProvider } from '@mui/x-date-pickers';
@@ -30,7 +30,7 @@ interface CreditCard extends Account {
   grace_period?: string;
   min_payment: number;
   payment_due_date?: string;
-  user_id: string;
+  user_id: number;
   type: 'credit';
 }
 
@@ -49,7 +49,7 @@ const AddCreditCardDialog: React.FC<AddCreditCardDialogProps> = ({ open, onClose
     grace_period: '',
     min_payment: 0,
     payment_due_date: '',
-    user_id: typeof userId === 'string' ? userId : String(userId || ''),
+    user_id: userId ?? 0,
     type: 'credit',
   });
 
@@ -147,7 +147,7 @@ const AddCreditCardDialog: React.FC<AddCreditCardDialogProps> = ({ open, onClose
       return;
     }
 
-    if (!userId || typeof userId !== 'string') {
+    if (userId == null) {
       dispatch(
         setSnackbar({
           message: 'Пользователь не авторизован',
@@ -176,7 +176,7 @@ const AddCreditCardDialog: React.FC<AddCreditCardDialogProps> = ({ open, onClose
         grace_period: '',
         min_payment: 0,
         payment_due_date: '',
-        user_id: userId,
+        user_id: userId ?? 0,
         type: 'credit',
       });
       dispatch(

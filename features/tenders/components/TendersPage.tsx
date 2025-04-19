@@ -10,16 +10,17 @@ import {
   DialogContent,
   Snackbar,
 } from '@mui/material';
-import { styled, useTheme } from '@mui/system';
+import { useTheme } from '@mui/system';
 import TenderMenu from './TenderMenu';
 import TenderTable from './TenderTable';
 import ReportModal from './ReportModal';
 import TenderFilters from './TenderFilters';
+import TenderAdvancedFilters from './TenderAdvancedFilters';
 import { Editor } from 'react-draft-wysiwyg';
 import { EditorState, convertToRaw, convertFromRaw } from 'draft-js';
 import 'react-draft-wysiwyg/dist/react-draft-wysiwyg.css';
 import { useDispatch, useSelector } from 'react-redux';
-import { RootState, AppDispatch } from 'app/store';
+import { RootState, AppDispatch } from '../../../app/store';
 import { tenderService } from '../services/tenderService';
 import { fetchTenders, addTender, updateTender, deleteTender } from '../tenderActions';
 import { setSelectedRows, setSortConfig, updateHeaderNote, addTenderRealtime, loadDemoTenders } from '../store/tendersSlice';
@@ -27,34 +28,8 @@ import logger from '../../../utils/logger';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 import { useErrorHandler } from '../hooks/useErrorHandler';
-import { COLORS } from 'config/constants'; // Используем COLORS из constants
-
-/**
- * Стилизованный компонент для отображения бюджета тендеров с поддержкой тёмной темы.
- */
-const BudgetBox = styled(Box)(({ theme }) => ({
-  display: 'flex',
-  alignItems: 'center',
-  gap: theme.spacing(3),
-  marginBottom: theme.spacing(3),
-  backgroundColor: theme.palette.mode === 'dark' ? 'rgba(30, 30, 30, 0.9)' : 'rgba(255, 255, 255, 0.9)',
-  padding: theme.spacing(2),
-  borderRadius: '16px',
-  boxShadow: '0 6px 20px rgba(0, 0, 0, 0.1)',
-  border: '1px solid rgba(255, 255, 255, 0.3)',
-  backdropFilter: 'blur(10px)',
-  transition: 'transform 0.3s ease, box-shadow 0.3s ease',
-  '&:hover': {
-    transform: 'translateY(-4px)',
-    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
-  },
-  [theme.breakpoints.down('sm')]: {
-    flexDirection: 'column',
-    alignItems: 'flex-start',
-  },
-}));
-
-const MAX_IMPORT_ROWS = 1000;
+import { MAX_IMPORT_ROWS } from '../../../config/constants'; // Используем MAX_IMPORT_ROWS из constants
+import { BudgetBox, FilterPanelBox, TableContainerBox, PageContainerBox, HeaderContainerBox, NoteBox } from '../styles';
 
 /**
  * Демо-данные для тендеров.
@@ -211,7 +186,7 @@ const TendersPage: React.FC = () => {
 
   const handleColorLabelSelect = useCallback(
     (id: string, color: string | null) => {
-      dispatch(updateTender({ id: parseInt(id), tenderData: { color_label: color } }));
+      dispatch(updateTender({ id: parseInt(id), tenderData: { color_label: color ?? undefined } }));
       logger.debug('TendersPage: Цвет метки изменён для тендера', { id, color });
       handleNotify('Цвет метки обновлён', 'success');
     },
@@ -359,10 +334,18 @@ const TendersPage: React.FC = () => {
 
   const handleSort = useCallback(
     (key: string) => {
-      const currentDirection = tenderState.sortConfig.key === key ? tenderState.sortConfig.direction : 'asc';
-      const newDirection = currentDirection === 'asc' ? 'desc' : 'asc';
-      dispatch(setSortConfig({ key, direction: newDirection }));
-      logger.debug('TendersPage: Сортировка изменена', { key, direction: newDirection });
+      const existing = tenderState.sortConfig.find((entry) => entry.key === key);
+      let newSortConfig;
+      if (existing) {
+        const newDirection = existing.direction === 'asc' ? 'desc' : 'asc';
+        newSortConfig = tenderState.sortConfig.map((entry) =>
+          entry.key === key ? { key, direction: newDirection } : entry
+        );
+      } else {
+        newSortConfig = [...tenderState.sortConfig, { key, direction: 'asc' }];
+      }
+      dispatch(setSortConfig(newSortConfig));
+      logger.debug('TendersPage: Мультисортировка изменена', { sortConfig: newSortConfig });
     },
     [dispatch, tenderState.sortConfig]
   );
@@ -431,23 +414,71 @@ const TendersPage: React.FC = () => {
   }, []);
 
   const filteredTenders = useMemo(() => {
-    if (tenderState.selectedStages.length === 0) {
-      return tenderState.tenders.allIds.map((id) => tenderState.tenders.byId[id]);
+    let list = tenderState.tenders.allIds.map((id) => tenderState.tenders.byId[id]);
+
+    // Фильтрация по этапам
+    if (tenderState.selectedStages.length > 0) {
+      list = list.filter((t) => t.stage && tenderState.selectedStages.includes(t.stage));
     }
-    return tenderState.tenders.allIds
-      .map((id) => tenderState.tenders.byId[id])
-      .filter((tender) => tenderState.selectedStages.includes(tender.stage || ''));
-  }, [tenderState.tenders, tenderState.selectedStages]);
+
+    // Расширенные фильтры
+    const { filters } = tenderState;
+    if (filters.search) {
+      const search = String(filters.search).toLowerCase();
+      list = list.filter((t) => JSON.stringify(t).toLowerCase().includes(search));
+    }
+    if (filters.endDateFrom) {
+      list = list.filter((t) => t.end_date && new Date(t.end_date) >= new Date(filters.endDateFrom));
+    }
+    if (filters.endDateTo) {
+      list = list.filter((t) => t.end_date && new Date(t.end_date) <= new Date(filters.endDateTo));
+    }
+    if (filters.startPriceMin) {
+      list = list.filter((t) => t.start_price && parseFloat(t.start_price) >= Number(filters.startPriceMin));
+    }
+    if (filters.startPriceMax) {
+      list = list.filter((t) => t.start_price && parseFloat(t.start_price) <= Number(filters.startPriceMax));
+    }
+    if (filters.customerRegion) {
+      list = list.filter((t) =>
+        t.customer_region && t.customer_region.toLowerCase().includes(String(filters.customerRegion).toLowerCase())
+      );
+    }
+    if (filters.customerName) {
+      list = list.filter((t) =>
+        t.customer_name && t.customer_name.toLowerCase().includes(String(filters.customerName).toLowerCase())
+      );
+    }
+
+    // Сортировка по мульти-ключам
+    const sortConfigList = tenderState.sortConfig;
+    if (sortConfigList && sortConfigList.length > 0) {
+      list = [...list].sort((a, b) => {
+        for (const { key, direction } of sortConfigList) {
+          const aVal = a[key];
+          const bVal = b[key];
+          if (aVal == null || bVal == null) {
+            if (aVal == null && bVal != null) return direction === 'asc' ? -1 : 1;
+            if (aVal != null && bVal == null) return direction === 'asc' ? 1 : -1;
+            continue;
+          }
+          if (typeof aVal === 'string' && typeof bVal === 'string') {
+            const comp = aVal.localeCompare(bVal, undefined, { numeric: true });
+            if (comp !== 0) return direction === 'asc' ? comp : -comp;
+          } else {
+            const comp = aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
+            if (comp !== 0) return direction === 'asc' ? comp : -comp;
+          }
+        }
+        return 0;
+      });
+    }
+
+    return list;
+  }, [tenderState.tenders, tenderState.selectedStages, tenderState.filters, tenderState.sortConfig]);
 
   return (
-    <Box
-      sx={{
-        flexGrow: 1,
-        display: 'flex',
-        height: '100vh',
-        backgroundColor: theme.palette.mode === 'dark' ? '#121212' : '#f0f2f5',
-      }}
-    >
+    <PageContainerBox>
       {tenderState.errors.fetch && (
         <Alert severity="error" sx={{ position: 'fixed', top: 10, left: '50%', transform: 'translateX(-50%)', zIndex: 1300 }}>
           Глобальная ошибка: {tenderState.errors.fetch}
@@ -459,14 +490,7 @@ const TendersPage: React.FC = () => {
         </Alert>
       )}
       <Box sx={{ flexGrow: 1, padding: 3, overflowY: 'auto', height: 'calc(100vh - 64px)' }}>
-        <Box
-          sx={{
-            position: 'sticky',
-            top: 0,
-            zIndex: 1100,
-            backgroundColor: theme.palette.mode === 'dark' ? '#121212' : '#f0f2f5',
-          }}
-        >
+        <HeaderContainerBox>
           <TenderMenu
             handleDeleteTender={handleDeleteTender}
             handleLoadFromExcel={handleLoadFromExcel}
@@ -475,32 +499,18 @@ const TendersPage: React.FC = () => {
             handleLoadFromDB={handleLoadFromDB}
             onNotify={handleNotify}
           />
-          <Box
-            sx={{
-              backgroundColor: theme.palette.mode === 'dark' ? 'rgba(30, 30, 30, 0.9)' : 'rgba(255, 255, 255, 0.9)',
-              borderRadius: '16px',
-              boxShadow: '0 6px 20px rgba(0, 0, 0, 0.15)',
-              border: '1px solid rgba(255, 255, 255, 0.3)',
-              backdropFilter: 'blur(10px)',
-              width: '100%',
-              mt: 1,
-              zIndex: 1099,
-              overflow: 'hidden',
-              transition: 'max-height 0.3s ease-in-out',
-              maxHeight: isNoteExpanded ? '400px' : '40px',
-            }}
-          >
+          <NoteBox sx={{ maxHeight: isNoteExpanded ? '400px' : '40px', backgroundColor: 'white' }}>
             <Button
               onClick={toggleNote}
               fullWidth
               sx={{
                 textAlign: 'left',
                 padding: '10px 16px',
-                backgroundColor: COLORS.BLUE_700, // Используем COLORS из constants
+                backgroundColor: '#1DE9B6', // turquoise
                 color: '#fff',
                 fontWeight: 'bold',
                 borderRadius: isNoteExpanded ? '16px 16px 0 0' : '16px',
-                '&:hover': { backgroundColor: COLORS.BLUE_900 },
+                '&:hover': { backgroundColor: '#17C4A5' },
               }}
             >
               {isNoteExpanded ? 'Свернуть заметку' : 'Развернуть заметку'}
@@ -514,73 +524,75 @@ const TendersPage: React.FC = () => {
                 toolbarStyle={{}}
               />
             </Box>
-          </Box>
-        </Box>
-        <Box sx={{ mt: 2 }}>
-          <BudgetBox>
-            <Typography
-              sx={{
-                fontSize: '1rem',
-                fontWeight: 500,
-                display: 'flex',
-                alignItems: 'center',
-                '& span': {
-                  marginLeft: '8px',
-                  fontWeight: 600,
-                  color: theme.palette.mode === 'dark' ? COLORS.ORANGE_300 : COLORS.ORANGE_500,
-                  transition: 'color 0.2s ease',
-                },
-              }}
-            >
-              В резерве: <span>{formatBudgetWithSpaces(calculateBudgetMemo.reserved)} ₽</span>
-            </Typography>
-            <Typography
-              sx={{
-                fontSize: '1rem',
-                fontWeight: 500,
-                display: 'flex',
-                alignItems: 'center',
-                '& span': {
-                  marginLeft: '8px',
-                  fontWeight: 600,
-                  color: theme.palette.mode === 'dark' ? COLORS.GREEN_300 : COLORS.GREEN_500,
-                  transition: 'color 0.2s ease',
-                },
-              }}
-            >
-              Доступный бюджет: <span>{formatBudgetWithSpaces(calculateBudgetMemo.available)} ₽</span>
-            </Typography>
-            <Typography
-              sx={{
-                fontSize: '1rem',
-                fontWeight: 500,
-                display: 'flex',
-                alignItems: 'center',
-                '& span': {
-                  marginLeft: '8px',
-                  fontWeight: 600,
-                  color: theme.palette.mode === 'dark' ? COLORS.RED_300 : COLORS.RED_500,
-                  transition: 'color 0.2s ease',
-                },
-              }}
-            >
-              Потрачено: <span>{formatBudgetWithSpaces(calculateBudgetMemo.spent)} ₽</span>
-            </Typography>
-          </BudgetBox>
-          <TenderFilters />
-          <TenderTable
-            selectedRows={tenderState.selectedRows}
-            handleRowSelect={handleRowSelect}
-            handleColorLabelSelect={handleColorLabelSelect}
-            sortConfig={tenderState.sortConfig}
-            handleSort={handleSort}
-            errors={{}}
-            handleUpdateNote={handleUpdateNote}
-            tenders={filteredTenders}
-            colors={COLORS} // Передаём COLORS из utils/constants
-            onNotify={handleNotify}
-          />
-        </Box>
+          </NoteBox>
+        </HeaderContainerBox>
+        <TableContainerBox>
+          <FilterPanelBox>
+            <BudgetBox>
+              <Typography
+                sx={{
+                  fontSize: '1rem',
+                  fontWeight: 500,
+                  display: 'flex',
+                  alignItems: 'center',
+                  '& span': {
+                    marginLeft: '8px',
+                    fontWeight: 600,
+                    color: theme.palette.mode === 'dark' ? theme.palette.warning.light : theme.palette.warning.main,
+                    transition: 'color 0.2s ease',
+                  },
+                }}
+              >
+                В резерве: <span>{formatBudgetWithSpaces(calculateBudgetMemo.reserved)} ₽</span>
+              </Typography>
+              <Typography
+                sx={{
+                  fontSize: '1rem',
+                  fontWeight: 500,
+                  display: 'flex',
+                  alignItems: 'center',
+                  '& span': {
+                    marginLeft: '8px',
+                    fontWeight: 600,
+                    color: theme.palette.mode === 'dark' ? theme.palette.success.light : theme.palette.success.main,
+                    transition: 'color 0.2s ease',
+                  },
+                }}
+              >
+                Доступный бюджет: <span>{formatBudgetWithSpaces(calculateBudgetMemo.available)} ₽</span>
+              </Typography>
+              <Typography
+                sx={{
+                  fontSize: '1rem',
+                  fontWeight: 500,
+                  display: 'flex',
+                  alignItems: 'center',
+                  '& span': {
+                    marginLeft: '8px',
+                    fontWeight: 600,
+                    color: theme.palette.mode === 'dark' ? theme.palette.error.light : theme.palette.error.main,
+                    transition: 'color 0.2s ease',
+                  },
+                }}
+              >
+                Потрачено: <span>{formatBudgetWithSpaces(calculateBudgetMemo.spent)} ₽</span>
+              </Typography>
+            </BudgetBox>
+            <TenderFilters />
+            <TenderAdvancedFilters />
+            <TenderTable
+              selectedRows={tenderState.selectedRows.map((id) => id.toString())}
+              handleRowSelect={handleRowSelect}
+              handleColorLabelSelect={handleColorLabelSelect}
+              sortConfig={tenderState.sortConfig}
+              handleSort={handleSort}
+              errors={{}}
+              handleUpdateNote={handleUpdateNote}
+              tenders={filteredTenders}
+              onNotify={handleNotify}
+            />
+          </FilterPanelBox>
+        </TableContainerBox>
         <ReportModal
           open={reportModalOpen}
           onClose={() => setReportModalOpen(false)}
@@ -618,7 +630,7 @@ const TendersPage: React.FC = () => {
           {snackbar.message}
         </Alert>
       </Snackbar>
-    </Box>
+    </PageContainerBox>
   );
 };
 

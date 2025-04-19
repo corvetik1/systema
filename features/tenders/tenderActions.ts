@@ -35,7 +35,7 @@ export const fetchTenders = createAsyncThunk<Tender[], void, { rejectValue: stri
 );
 
 // Добавление нового тендера
-export const addTender = createAsyncThunk<Tender, Tender, { rejectValue: string }>(
+export const addTender = createAsyncThunk<Tender, Omit<Tender, 'id'>, { rejectValue: string }>(
   'tenders/addTender',
   async (tenderData, { dispatch, rejectWithValue }) => {
     try {

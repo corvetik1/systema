@@ -61,24 +61,22 @@ interface ColorOption {
  * @property {string[]} selectedRows - Массив ID выбранных строк.
  * @property {(id: string) => void} handleRowSelect - Функция для выбора строки.
  * @property {(id: string, color: string | null) => void} handleColorLabelSelect - Функция для выбора цветовой метки.
- * @property {{ key: string; direction: 'asc' | 'desc' }} sortConfig - Конфигурация сортировки.
+ * @property {Array<{ key: string; direction: 'asc' | 'desc' }>} sortConfig - Конфигурация сортировки.
  * @property {(key: string) => void} handleSort - Функция для сортировки таблицы.
  * @property {{ [key: string]: string }} errors - Объект ошибок для ячеек.
  * @property {(id: string, note: string) => Promise<void>} handleUpdateNote - Функция для обновления заметки.
  * @property {Tender[]} tenders - Массив тендеров для отображения.
- * @property {Record<string, string>} colors - Объект цветов для меток (заменён ColorOption[] на объект).
  * @property {(message: string, severity: 'success' | 'error') => void} onNotify - Функция для отправки уведомлений.
  */
 interface TenderTableProps {
   selectedRows: string[];
   handleRowSelect: (id: string) => void;
   handleColorLabelSelect: (id: string, color: string | null) => void;
-  sortConfig: { key: string; direction: 'asc' | 'desc' };
+  sortConfig: Array<{ key: string; direction: 'asc' | 'desc' }>;
   handleSort: (key: string) => void;
   errors: { [key: string]: string };
   handleUpdateNote: (id: string, note: string) => Promise<void>;
   tenders: Tender[];
-  colors: Record<string, string>;
   onNotify: (message: string, severity: 'success' | 'error') => void;
 }
 
@@ -87,7 +85,7 @@ interface TenderTableProps {
  * Отображает тендеры с возможностью сортировки, выбора строк, редактирования заметок и настройки колонок.
  */
 const TenderTable: React.FC<TenderTableProps> = memo(
-  ({ selectedRows, handleRowSelect, handleColorLabelSelect, sortConfig, handleSort, errors, handleUpdateNote, tenders, colors, onNotify }) => {
+  ({ selectedRows, handleRowSelect, handleColorLabelSelect, sortConfig, handleSort, errors, handleUpdateNote, tenders, onNotify }) => {
     const dispatch = useDispatch<AppDispatch>();
     const theme = useTheme();
     const visibleColumns = useSelector((state: RootState) => state.tenders.visibleColumns);
@@ -264,29 +262,32 @@ const TenderTable: React.FC<TenderTableProps> = memo(
               dataKey={column.id}
               width={Math.max(column.label.length * 12, 150)}
               disableSort={false}
-              headerRenderer={({ dataKey, label }: TableHeaderProps) => (
-                <Box
-                  component="div"
-                  onClick={() => handleSort(dataKey)}
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    cursor: 'pointer',
-                    '&:hover': { color: theme.palette.primary.main },
-                    width: '100%',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  <Typography variant="caption" sx={{ fontWeight: 'bold', flexGrow: 1 }}>
-                    {label}
-                  </Typography>
-                  {sortConfig.key === dataKey && (
-                    <Tooltip title={`Сортировка по ${sortConfig.direction === 'asc' ? 'возрастанию' : 'убыванию'}`}>
-                      {sortConfig.direction === 'asc' ? <ArrowUpward sx={{ fontSize: 16 }} /> : <ArrowDownward sx={{ fontSize: 16 }} />}
-                    </Tooltip>
-                  )}
-                </Box>
-              )}
+              headerRenderer={({ dataKey, label }: TableHeaderProps) => {
+                const entry = sortConfig.find((e) => e.key === dataKey);
+                return (
+                  <Box
+                    component="div"
+                    onClick={() => handleSort(dataKey)}
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      cursor: 'pointer',
+                      '&:hover': { color: theme.palette.primary.main },
+                      width: '100%',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    <Typography variant="caption" sx={{ fontWeight: 'bold', flexGrow: 1 }}>
+                      {label}
+                    </Typography>
+                    {entry && (
+                      <Tooltip title={`Сортировка по ${entry.direction === 'asc' ? 'возрастанию' : 'убыванию'}`}>
+                        {entry.direction === 'asc' ? <ArrowUpward sx={{ fontSize: 16 }} /> : <ArrowDownward sx={{ fontSize: 16 }} />}
+                      </Tooltip>
+                    )}
+                  </Box>
+                );
+              }}
               cellDataGetter={({ rowData }: { rowData: Tender }) => rowData[column.id] ?? ''} // Добавлен cellDataGetter
               cellRenderer={({ cellData, rowData }: TableCellProps) => {
                 const value = cellData ?? '';
@@ -411,8 +412,8 @@ const TenderTable: React.FC<TenderTableProps> = memo(
                     rowCount={tenders.length}
                     rowGetter={({ index }: { index: number }) => tenders[index] || {}}
                     sort={({ sortBy }: { sortBy: string }) => handleSort(sortBy)}
-                    sortBy={sortConfig.key || undefined}
-                    sortDirection={sortConfig.direction === 'asc' ? SortDirection.ASC : SortDirection.DESC}
+                    sortBy={sortConfig[0]?.key || undefined}
+                    sortDirection={sortConfig[0]?.direction === 'asc' ? SortDirection.ASC : SortDirection.DESC}
                     onRowClick={({ rowData }: { rowData: Tender }) => handleOpenEditModal(rowData)}
                     rowClassName={({ index }: { index: number }) =>
                       index === -1 ? 'virtualizedTableHeader' : `virtualizedTableRow clickableRow ${index % 2 === 0 ? 'evenRow' : 'oddRow'}`

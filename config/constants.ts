@@ -113,4 +113,6 @@ export const FINANCE_CATEGORIES = [
   ...FINANCE_INCOME_CATEGORIES,
 ];
 
+export const MAX_IMPORT_ROWS = 1000;
+
 export default initialVisibleColumns;

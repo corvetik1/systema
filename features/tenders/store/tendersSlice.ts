@@ -1,6 +1,6 @@
 // src/features/tenders/tendersSlice.ts
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-// import logger from '../../../utils/logger'; // logger отсутствует, убираем импорт
+import logger from '../../../utils/logger';
 import { initialVisibleColumns } from '../../../config/visibleColumnsConfig';
 import {
   fetchTenders,
@@ -56,7 +56,7 @@ export interface TendersState {
   selectedRows: number[];
   errors: { [key: string]: string | null };
   filters: { [key: string]: any };
-  sortConfig: { key: string | null; direction: 'asc' | 'desc' };
+  sortConfig: Array<{ key: string; direction: 'asc' | 'desc' }>;
   colorFilter: string;
   visibleColumns: ColumnConfig[];
   headerNote: string;
@@ -75,7 +75,7 @@ const initialState: TendersState = {
   selectedRows: [],
   errors: {},
   filters: {},
-  sortConfig: { key: null, direction: 'asc' },
+  sortConfig: [],
   colorFilter: '',
   visibleColumns: initialVisibleColumns,
   headerNote: '',
@@ -95,7 +95,7 @@ const tendersSlice = createSlice({
       state.selectedRows = action.payload;
     },
     // Установка конфигурации сортировки таблицы
-    setSortConfig(state, action: PayloadAction<{ key: string | null; direction: 'asc' | 'desc' }>) {
+    setSortConfig(state, action: PayloadAction<Array<{ key: string; direction: 'asc' | 'desc' }>>) {
       state.sortConfig = action.payload;
     },
     // Установка фильтра по цвету метки
@@ -122,13 +122,13 @@ const tendersSlice = createSlice({
       if (!state.tenders.allIds.includes(tender.id)) {
         state.tenders.allIds.push(tender.id);
       }
-      debug('Тендер добавлен/обновлен через WebSocket', { tenderId: tender.id });
+      logger.debug('Тендер добавлен/обновлен через WebSocket', { tenderId: tender.id });
     },
     // Обновление тендера в реальном времени (через WebSocket)
     updateTenderRealtime(state, action: PayloadAction<Tender>) {
       const tender = action.payload;
       state.tenders.byId[tender.id] = tender;
-      debug('Тендер обновлен через WebSocket', { tenderId: tender.id });
+      logger.debug('Тендер обновлен через WebSocket', { tenderId: tender.id });
     },
     // Удаление тендера в реальном времени (через WebSocket)
     deleteTenderRealtime(state, action: PayloadAction<number>) {
@@ -137,7 +137,7 @@ const tendersSlice = createSlice({
       state.tenders.allIds = state.tenders.allIds.filter((id) => id !== tenderId);
       state.selectedRows = state.selectedRows.filter((id) => id !== tenderId);
       delete state.tenderBudgets[tenderId];
-      debug('Тендер удален через WebSocket', { tenderId });
+      logger.debug('Тендер удален через WebSocket', { tenderId });
     },
     // Очистка ошибок по ключу или полностью
     clearTenderError(state, action: PayloadAction<string | undefined>) {
@@ -174,6 +174,14 @@ const tendersSlice = createSlice({
       const { key, message } = action.payload;
       state.errors[key] = message;
     },
+    // Установка фильтра по ключу-значению
+    setFilter(state, action: PayloadAction<{ key: string; value: any }>) {
+      state.filters[action.payload.key] = action.payload.value;
+    },
+    // Очистка всех фильтров
+    clearFilters(state) {
+      state.filters = {};
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -181,7 +189,7 @@ const tendersSlice = createSlice({
       .addCase(fetchTenders.pending, (state) => {
         state.loading = true;
         state.errors.fetch = null;
-        debug('Загрузка тендеров...');
+        logger.debug('Загрузка тендеров...');
       })
       .addCase(fetchTenders.fulfilled, (state, action: PayloadAction<Tender[]>) => {
         const tendersData = action.payload;
@@ -192,18 +200,18 @@ const tendersSlice = createSlice({
         state.tenders.allIds = tendersData.map((tender) => tender.id);
         state.loading = false;
         state.lastUpdated = new Date().toISOString();
-        info('Тендеры успешно загружены', { count: tendersData.length });
+        logger.info('Тендеры успешно загружены', { count: tendersData.length });
       })
       .addCase(fetchTenders.rejected, (state, action) => {
         state.loading = false;
         state.errors.fetch = action.payload || 'Неизвестная ошибка загрузки тендеров';
-        error('Ошибка загрузки тендеров', { error: action.payload });
+        logger.error('Ошибка загрузки тендеров', { error: action.payload });
       })
       // Обработка добавления тендера
       .addCase(addTender.pending, (state) => {
         state.loading = true;
         state.errors.add = null;
-        debug('Добавление тендера...');
+        logger.debug('Добавление тендера...');
       })
       .addCase(addTender.fulfilled, (state, action: PayloadAction<Tender>) => {
         const newTender = action.payload;
@@ -212,35 +220,35 @@ const tendersSlice = createSlice({
           state.tenders.allIds.push(newTender.id);
         }
         state.loading = false;
-        info('Тендер успешно добавлен', { id: newTender.id });
+        logger.info('Тендер успешно добавлен', { id: newTender.id });
       })
       .addCase(addTender.rejected, (state, action) => {
         state.loading = false;
         state.errors.add = action.payload || 'Неизвестная ошибка добавления тендера';
-        error('Ошибка добавления тендера', { error: action.payload });
+        logger.error('Ошибка добавления тендера', { error: action.payload });
       })
       // Обработка обновления тендера
       .addCase(updateTender.pending, (state) => {
         state.loading = true;
         state.errors.update = null;
-        debug('Обновление тендера...');
+        logger.debug('Обновление тендера...');
       })
       .addCase(updateTender.fulfilled, (state, action: PayloadAction<Tender>) => {
         const updatedTender = action.payload;
         state.tenders.byId[updatedTender.id] = updatedTender;
         state.loading = false;
-        info('Тендер успешно обновлен', { id: updatedTender.id });
+        logger.info('Тендер успешно обновлен', { id: updatedTender.id });
       })
       .addCase(updateTender.rejected, (state, action) => {
         state.loading = false;
         state.errors.update = action.payload || 'Неизвестная ошибка обновления тендера';
-        error('Ошибка обновления тендера', { error: action.payload });
+        logger.error('Ошибка обновления тендера', { error: action.payload });
       })
       // Обработка удаления тендера
       .addCase(deleteTender.pending, (state) => {
         state.loading = true;
         state.errors.delete = null;
-        debug('Удаление тендера...');
+        logger.debug('Удаление тендера...');
       })
       .addCase(deleteTender.fulfilled, (state, action: PayloadAction<number>) => {
         const tenderId = action.payload;
@@ -249,59 +257,59 @@ const tendersSlice = createSlice({
         state.selectedRows = state.selectedRows.filter((id) => id !== tenderId);
         delete state.tenderBudgets[tenderId];
         state.loading = false;
-        info('Тендер успешно удален', { id: tenderId });
+        logger.info('Тендер успешно удален', { id: tenderId });
       })
       .addCase(deleteTender.rejected, (state, action) => {
         state.loading = false;
         state.errors.delete = action.payload || 'Неизвестная ошибка удаления тендера';
-        error('Ошибка удаления тендера', { error: action.payload });
+        logger.error('Ошибка удаления тендера', { error: action.payload });
       })
       // Обработка загрузки бюджета тендера
       .addCase(fetchTenderBudget.pending, (state) => {
         state.loading = true;
-        debug('Загрузка бюджета...');
+        logger.debug('Загрузка бюджета...');
       })
       .addCase(fetchTenderBudget.fulfilled, (state, action: PayloadAction<{ tenderId: number; budget: Budget }>) => {
         const { tenderId, budget } = action.payload;
         state.tenderBudgets[tenderId] = budget;
         state.loading = false;
-        info('Бюджет загружен', { tenderId });
+        logger.info('Бюджет загружен', { tenderId });
       })
       .addCase(fetchTenderBudget.rejected, (state, action) => {
         state.loading = false;
-        error('Ошибка загрузки бюджета', { error: action.payload });
+        logger.error('Ошибка загрузки бюджета', { error: action.payload });
       })
       // Обработка загрузки заметки в шапке
       .addCase(fetchHeaderNote.pending, (state) => {
         state.loading = true;
         state.errors.headerNote = null;
-        debug('Загрузка заметки...');
+        logger.debug('Загрузка заметки...');
       })
       .addCase(fetchHeaderNote.fulfilled, (state, action: PayloadAction<string>) => {
         state.headerNote = action.payload;
         state.loading = false;
-        info('Заметка загружена');
+        logger.info('Заметка загружена');
       })
       .addCase(fetchHeaderNote.rejected, (state, action) => {
         state.loading = false;
         state.errors.headerNote = action.payload || 'Неизвестная ошибка загрузки заметки';
-        error('Ошибка загрузки заметки', { error: action.payload });
+        logger.error('Ошибка загрузки заметки', { error: action.payload });
       })
       // Обработка обновления заметки в шапке
       .addCase(updateHeaderNote.pending, (state) => {
         state.loading = true;
         state.errors.headerNoteUpdate = null;
-        debug('Обновление заметки...');
+        logger.debug('Обновление заметки...');
       })
       .addCase(updateHeaderNote.fulfilled, (state, action: PayloadAction<string>) => {
         state.headerNote = action.payload;
         state.loading = false;
-        info('Заметка обновлена');
+        logger.info('Заметка обновлена');
       })
       .addCase(updateHeaderNote.rejected, (state, action) => {
         state.loading = false;
         state.errors.headerNoteUpdate = action.payload || 'Неизвестная ошибка обновления заметки';
-        error('Ошибка обновления заметки', { error: action.payload });
+        logger.error('Ошибка обновления заметки', { error: action.payload });
       });
   },
 });
@@ -323,6 +331,8 @@ export const {
   setSelectedStages,
   setLoading,
   setError,
+  setFilter,
+  clearFilters,
 } = tendersSlice.actions;
 
 // Экспорт асинхронных действий из tenderActions.ts
@@ -338,6 +348,3 @@ export {
 
 // Экспорт редьюсера по умолчанию
 export default tendersSlice.reducer;
-
-// Экспорт интерфейса состояния для использования в других частях приложения
-export { TendersState };

@@ -6,10 +6,6 @@ import {
   Typography,
   Fade,
   IconButton,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { formatNumber } from '../../../utils/formatUtils';
@@ -20,7 +16,7 @@ import { RootState, AppDispatch } from '../../../app/store';
 import { deleteTransaction } from '../store/financeActions';
 import logger from '../../../utils/logger';
 import { setSnackbar } from '../../../auth/authSlice';
-import FINANCE_TRANSACTION_TYPES from '../../../config/constants';
+import DebitCard from './DebitCard';
 
 interface Account {
   id: number;
@@ -50,7 +46,6 @@ const AccountCards: React.FC = () => {
 
   const [expandedAccount, setExpandedAccount] = useState<number | null>(null);
   const [expandedMonths, setExpandedMonths] = useState<{ [key: string]: boolean }>({});
-  const [filterType, setFilterType] = useState<string>('all');
 
   const accountsArray = useMemo(() => Object.values(accounts.byId).filter((account) => account.type !== 'credit'), [accounts]);
 
@@ -91,8 +86,7 @@ const AccountCards: React.FC = () => {
 
   const groupedTransactions = useMemo(() => {
     return accountsArray.map((account) => {
-      const accountTxs = (transactionsByAccountId[account.id] || [])
-        .filter((t) => filterType === 'all' || t.type === filterType);
+      const accountTxs = transactionsByAccountId[account.id] || [];
 
       const byMonth = accountTxs.reduce(
         (acc: { [key: string]: { monthName: string; transactions: AccountTransaction[] } }, tx) => {
@@ -113,34 +107,17 @@ const AccountCards: React.FC = () => {
         ),
       };
     });
-  }, [accountsArray, transactionsByAccountId, filterType]);
+  }, [accountsArray, transactionsByAccountId]);
 
   return (
     <Fade in={true} timeout={500}>
       <Box className="account-cards">
-        <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap' }}>
-          <FormControl sx={{ minWidth: 150, flexGrow: 1 }} size="small">
-            <InputLabel>Тип</InputLabel>
-            <Select
-              value={filterType}
-              onChange={(e) => setFilterType(e.target.value as string)}
-              label="Тип"
-            >
-              {FINANCE_TRANSACTION_TYPES.map((type) => (
-                <MenuItem key={type.value} value={type.value}>
-                  {type.label}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Box>
-        {accountsArray.length === 0 ? (
-          <Typography sx={{ p: 2, textAlign: 'center', color: '#757575' }}>
-            Нет доступных счетов
-          </Typography>
-        ) : (
-          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))', gap: 2 }} className="cards-container">
-            {groupedTransactions.map((account) => (
+        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))', gap: 2 }} className="cards-container">
+          {accountsArray.length === 0 ? (
+            // Показываем мок-дебетовую карту до подключения реальных данных
+            <DebitCard name="ТБанк" balance={50000} />
+          ) : (
+            groupedTransactions.map((account) => (
               <AccountCard key={account.id} id={`card-${account.id}`}>
                 <Box className="decor-pattern" />
                 <Box className="card-header">
@@ -225,9 +202,9 @@ const AccountCards: React.FC = () => {
                   )}
                 </Box>
               </AccountCard>
-            ))}
-          </Box>
-        )}
+            ))
+          )}
+        </Box>
       </Box>
     </Fade>
   );

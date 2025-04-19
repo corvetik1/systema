@@ -4,14 +4,15 @@ import {
   Box,
   Typography,
   Fade,
-  CircularProgress,
+  Divider,
 } from '@mui/material';
 import { useDispatch, useSelector } from 'react-redux';
-import TransactionForm from './TransactionForm';
+import TransactionForm, { NewTransaction } from './TransactionForm';
 import AddDebtDialog from './dialogs/AddDebtDialog';
 import AddLoanDialog from './dialogs/AddLoanDialog';
 import EditLoanDialog from './dialogs/EditLoanDialog';
 import AddCreditCardDialog from './dialogs/AddCreditCardDialog';
+import AddDebitCardDialog from './dialogs/AddDebitCardDialog';
 import EditCreditCardDialog from './dialogs/EditCreditCardDialog';
 import ReportDialog from './dialogs/ReportDialog';
 import HistoryDialog from './dialogs/HistoryDialog';
@@ -31,6 +32,7 @@ import {
   SectionTitle,
   AccountsSummary,
   AccountsSummaryItem,
+  AccountsContainer,
   DebtTableContainer,
   TransactionFormContainer,
   StyledButton,
@@ -40,16 +42,7 @@ import { fetchInitialData, addTransaction, saveCreditCard, saveEditedLoan } from
 import { setSnackbar } from '../../../auth/authSlice';
 import { formatCurrency } from '../../../utils/formatUtils';
 import logger from '../../../utils/logger';
-import { Account, Transaction, Loan } from '../financeSlice';
-
-interface NewTransaction {
-  accountId: string;
-  transferToAccountId: number | null;
-  type: 'income' | 'expense' | 'transfer';
-  amount: string;
-  description: string;
-  category: string;
-}
+import { Account, Transaction, Loan } from '../store/financeSlice';
 
 const FinancePage: React.FC = () => {
   const dispatch: AppDispatch = useDispatch();
@@ -69,6 +62,7 @@ const FinancePage: React.FC = () => {
   const [addLoanDialogOpen, setAddLoanDialogOpen] = useState<boolean>(false);
   const [editLoanDialogOpen, setEditLoanDialogOpen] = useState<boolean>(false);
   const [addCreditCardDialogOpen, setAddCreditCardDialogOpen] = useState<boolean>(false);
+  const [addDebitCardDialogOpen, setAddDebitCardDialogOpen] = useState<boolean>(false);
   const [editCreditCardDialogOpen, setEditCreditCardDialogOpen] = useState<boolean>(false);
   const [reportDialogOpen, setReportDialogOpen] = useState<boolean>(false);
   const [historyDialogOpen, setHistoryDialogOpen] = useState<boolean>(false);
@@ -144,7 +138,7 @@ const FinancePage: React.FC = () => {
       dispatch(setSnackbar({ message: 'Введите корректную сумму больше 0', severity: 'error' }));
       return;
     }
-    if (type === 'transfer' && !transferToAccountId) {
+    if (type === 'transfer_in' && !transferToAccountId) {
       dispatch(setSnackbar({ message: 'Выберите счёт получателя для перевода', severity: 'error' }));
       return;
     }
@@ -155,11 +149,11 @@ const FinancePage: React.FC = () => {
 
     setIsSyncing(true);
     try {
-      const txData: Transaction = {
-        debit_card_id: type === 'expense' ? parseInt(accountId) : null,
-        credit_card_id: type === 'expense' && creditAccounts.some(acc => acc.id === parseInt(accountId)) ? parseInt(accountId) : null,
-        transfer_to_debit_card_id: type === 'transfer' && debitAccounts.some(acc => acc.id === transferToAccountId) ? transferToAccountId : null,
-        transfer_to_credit_card_id: type === 'transfer' && creditAccounts.some(acc => acc.id === transferToAccountId) ? transferToAccountId : null,
+      const txData = {
+        debit_card_id: type === 'expense' ? parseInt(accountId) : undefined,
+        credit_card_id: type === 'expense' && creditAccounts.some(acc => acc.id === parseInt(accountId)) ? parseInt(accountId) : undefined,
+        transfer_to_debit_card_id: type === 'transfer_in' && transferToAccountId != null && debitAccounts.some(acc => acc.id === transferToAccountId) ? transferToAccountId : undefined,
+        transfer_to_credit_card_id: type === 'transfer_in' && transferToAccountId != null && creditAccounts.some(acc => acc.id === transferToAccountId) ? transferToAccountId : undefined,
         type,
         amount: parsedAmount,
         description: description.trim(),
@@ -168,7 +162,7 @@ const FinancePage: React.FC = () => {
         user_id: userId!,
       };
       logger.info('FinancePage: Добавление транзакции', { txData });
-      await dispatch(addTransaction(txData)).unwrap();
+      await dispatch(addTransaction(txData)); // txData without id is allowed now
       setNewTransaction({ ...newTransaction, amount: '', description: '', category: '' });
       dispatch(setSnackbar({ message: 'Транзакция успешно добавлена', severity: 'success' }));
     } catch (err) {
@@ -305,18 +299,19 @@ const FinancePage: React.FC = () => {
                 ))}
               </AccountsSummary>
               <SectionTitle variant="h2">Долги</SectionTitle>
-              {loading ? (
-                <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-                  <CircularProgress />
-                </Box>
-              ) : (
-                <DebtTable
-                  items={unifiedDebts}
-                  totalAmountToPay={unifiedDebts.reduce((sum, debt) => sum + debt.amountToPay, 0)}
-                  totalDebtAmount={unifiedDebts.reduce((sum, debt) => sum + debt.totalAmount, 0)}
-                />
-              )}
+              <DebtTable
+                items={unifiedDebts}
+                totalAmountToPay={unifiedDebts.reduce((sum, debt) => sum + debt.amountToPay, 0)}
+                totalDebtAmount={unifiedDebts.reduce((sum, debt) => sum + debt.totalAmount, 0)}
+              />
             </DebtTableContainer>
+
+            {/* Секция дебетовых карт */}
+            <Box sx={{ mb: 3 }}>
+              <SectionTitle variant="h2">Дебетовые карты</SectionTitle>
+              <AccountCards />
+            </Box>
+            <Divider sx={{ my: 3 }} />
 
             <TransactionFormContainer>
               <SectionTitle variant="h2">Добавить операцию</SectionTitle>
@@ -330,33 +325,30 @@ const FinancePage: React.FC = () => {
               />
             </TransactionFormContainer>
 
+            {/* Секции кредитных карт и кредитов */}
+            <Divider sx={{ my: 3 }} />
+            <Box sx={{ display: 'flex', gap: 3 }}>
+              <Box sx={{ flex: 1 }}>
+                <SectionTitle variant="h2">Кредитные карты</SectionTitle>
+                <CreditCards />
+              </Box>
+              <Divider orientation="vertical" flexItem />
+              <Box sx={{ flex: 1 }}>
+                <SectionTitle variant="h2">Кредиты</SectionTitle>
+                <Loans />
+              </Box>
+            </Box>
+
             <Box sx={{ display: 'flex', gap: '10px', margin: '20px 0', flexWrap: 'wrap' }}>
+              <StyledButton onClick={() => setAddDebitCardDialogOpen(true)}>
+                Добавить дебетовую карту
+              </StyledButton>
               <StyledButton onClick={() => setAddCreditCardDialogOpen(true)}>
                 Добавить кредитную карту
               </StyledButton>
               <StyledButton onClick={() => setAddLoanDialogOpen(true)}>
                 Добавить кредит
               </StyledButton>
-              <StyledButton onClick={() => setAddDebtDialogOpen(true)}>
-                Добавить долг
-              </StyledButton>
-            </Box>
-
-            <Box className="accounts">
-              <Box id="debit-cards">
-                <SectionTitle variant="h2">Дебетовые карты</SectionTitle>
-                <AccountCards />
-              </Box>
-
-              <Box id="credit-cards">
-                <SectionTitle variant="h2">Кредитные карты</SectionTitle>
-                <CreditCards />
-              </Box>
-
-              <Box id="loans">
-                <SectionTitle variant="h2">Кредиты</SectionTitle>
-                <Loans />
-              </Box>
             </Box>
 
             <Typography
@@ -382,6 +374,7 @@ const FinancePage: React.FC = () => {
           handleSaveEditedLoan={handleSaveEditedLoan}
         />
         <AddCreditCardDialog open={addCreditCardDialogOpen} onClose={() => setAddCreditCardDialogOpen(false)} />
+        <AddDebitCardDialog open={addDebitCardDialogOpen} onClose={() => setAddDebitCardDialogOpen(false)} />
         <EditCreditCardDialog
           open={editCreditCardDialogOpen}
           onClose={() => setEditCreditCardDialogOpen(false)}
